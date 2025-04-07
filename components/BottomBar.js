@@ -4,7 +4,7 @@ import {colors} from "../colors";
 
 export default function BottomBar({state, navigation}) {
     const screenToIcon = {
-        Home: "group",
+        Groups: "group",
         Events: "event-available",
         Notifications: "notifications",
         Chat: "chat",

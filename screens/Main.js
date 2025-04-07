@@ -1,5 +1,5 @@
 import {colors} from "../colors";
-import HomeScreen from "./HomeScreen";
+import GroupScreen from "./group/GroupScreen";
 import EventsScreen from "./EventsScreen";
 import NotificationsScreen from "./NotificationsScreen";
 import ChatScreen from "./ChatScreen";
@@ -13,7 +13,7 @@ export function Main() {
                 cardStyle: {backgroundColor: colors.primary},
             }}
         >
-            <Stack.Screen name="Home" component={HomeScreen}/>
+            <Stack.Screen name="Groups" component={GroupScreen}/>
             <Stack.Screen name="Events" component={EventsScreen}/>
             <Stack.Screen name="Notifications" component={NotificationsScreen}/>
             <Stack.Screen name="Chat" component={ChatScreen}/>
