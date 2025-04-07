@@ -1,20 +1,24 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import {NavigationContainer} from "@react-navigation/native";
+import {createBottomTabNavigator} from "@react-navigation/bottom-tabs";
+import HomeScreen from "./screens/HomeScreen";
+import EventsScreen from "./screens/EventsScreen";
+import NotificationsScreen from "./screens/NotificationsScreen";
+import ChatScreen from "./screens/ChatScreen";
+import BottomBar from "./components/BottomBar";
+
+const Tab = createBottomTabNavigator();
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+    return (
+        <NavigationContainer>
+            <Tab.Navigator screenOptions={{
+                headerShown: false // Isso remove o header de todas as telas
+            }} tabBar={(props) => <BottomBar {...props} />}>
+                <Tab.Screen name="Home" component={HomeScreen}/>
+                <Tab.Screen name="Events" component={EventsScreen}/>
+                <Tab.Screen name="Notifications" component={NotificationsScreen}/>
+                <Tab.Screen name="Chat" component={ChatScreen}/>
+            </Tab.Navigator>
+        </NavigationContainer>
+    );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
