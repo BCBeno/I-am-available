@@ -1,13 +1,25 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Pressable } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import RequestItem from "../components/RequestItem";
-import { defaultStyles } from "../default-styles"; // Import the default styles
+import { defaultStyles } from "../default-styles";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 const GroupRequests = () => {
-  const groupInfo = {
-    name: "Desenvolvimento Multiplataforma",
-    id: "dmgroup-A-2024-2",
-  };
+  const navigation = useNavigation();
+  const route = useRoute();
+
+  // Get data from notification, if sent
+  const notification = route.params?.notification;
+
+  const groupInfo = notification
+    ? {
+        name: notification.subject,
+        id: notification.group,
+      }
+    : {
+        name: "Desenvolvimento Multiplataforma",
+        id: "dmgroup-A-2024-2",
+      };
 
   const [requests, setRequests] = useState([
     { id: 1, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
@@ -24,11 +36,13 @@ const GroupRequests = () => {
 
   return (
     <View style={defaultStyles.container}>
-      <TouchableOpacity style={defaultStyles.backButton}>
+      <TouchableOpacity
+        style={defaultStyles.backButton}
+        onPress={() => navigation.goBack()}
+      >
         <Text>← Back</Text>
       </TouchableOpacity>
 
-      {/* Big Card */}
       <View style={defaultStyles.bigCard}>
         <Text style={defaultStyles.title}>
           There are {requests.length} new requests to join your group
@@ -36,7 +50,6 @@ const GroupRequests = () => {
         <Text style={defaultStyles.groupName}>{groupInfo.name}</Text>
         <Text style={defaultStyles.groupId}>{groupInfo.id}</Text>
 
-        {/* Scrollable Requests */}
         <ScrollView style={defaultStyles.requestList}>
           {requests.map((user) => (
             <RequestItem key={user.id} user={user} />

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { defaultStyles } from "../default-styles"; // Import the default styles
+import { MaterialIcons } from '@expo/vector-icons';
+
 
 const RequestItem = ({ user }) => {
   const [status, setStatus] = useState(null);
@@ -28,14 +30,15 @@ const RequestItem = ({ user }) => {
               onPress={() => handlePress("accepted")}
               style={defaultStyles.acceptBtn}
             >
-              <Text>✅</Text>
+              <MaterialIcons name="check-box" size={28} color="green" />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handlePress("rejected")}
               style={defaultStyles.rejectBtn}
             >
-              <Text>❌</Text>
-            </TouchableOpacity>
+              <MaterialIcons name="disabled-by-default" size={28} color="red" />
+
+      </TouchableOpacity>
           </>
         ) : (
           // Placeholder to maintain the card size
