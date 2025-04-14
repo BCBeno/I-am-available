@@ -8,31 +8,29 @@ const GroupRequests = () => {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Get data from notification, if sent
+  // Get the notification passed from the previous screen
   const notification = route.params?.notification;
+  const [studentRequests, setStudentRequests] = useState(
+    notification?.studentRequests || []
+  );
 
+  // Fallback group info if no notification is passed
   const groupInfo = notification
     ? {
         name: notification.subject,
         id: notification.group,
       }
     : {
-        name: "Desenvolvimento Multiplataforma",
-        id: "dmgroup-A-2024-2",
+        name: "Unknown Group",
+        id: "unknown-group",
       };
 
-  const [requests, setRequests] = useState([
-    { id: 1, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
-    { id: 2, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
-    { id: 3, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
-    { id: 4, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
-    { id: 5, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
-    { id: 6, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
-    { id: 7, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
-    { id: 8, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
-    { id: 9, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
-    { id: 10, name: "Lucas Alvarenga Lopes", username: "lucasalopes" },
-  ]);
+  const handleStatusChange = (id, newStatus) => {
+    // Remove the user from the list after their request is handled
+    setStudentRequests((prevRequests) =>
+      prevRequests.filter((request) => request.id !== id)
+    );
+  };
 
   return (
     <View style={defaultStyles.container}>
@@ -45,14 +43,18 @@ const GroupRequests = () => {
 
       <View style={defaultStyles.bigCard}>
         <Text style={defaultStyles.title}>
-          There are {requests.length} new requests to join your group
+          There are {studentRequests.length} new requests to join your group
         </Text>
         <Text style={defaultStyles.groupName}>{groupInfo.name}</Text>
         <Text style={defaultStyles.groupId}>{groupInfo.id}</Text>
 
         <ScrollView style={defaultStyles.requestList}>
-          {requests.map((user) => (
-            <RequestItem key={user.id} user={user} />
+          {studentRequests.map((user) => (
+            <RequestItem
+              key={user.id}
+              user={user}
+              onStatusChange={handleStatusChange} // Pass the function here
+            />
           ))}
         </ScrollView>
       </View>

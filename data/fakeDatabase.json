@@ -1,0 +1,24 @@
+{
+    "notifications": [
+      {
+        "title": "New announcement from your group",
+        "subject": "Desenvolvimento Multiplataforma",
+        "group": "dmgroup-A-2024-2",
+        "dateTime": "01/01/2025 - 14:00",
+        "studentRequests": [
+          { "id": 1, "name": "John Doe", "username": "johndoe123", "status": null },
+          { "id": 2, "name": "Jane Smith", "username": "janesmith456", "status": null }
+        ]
+      },
+      {
+        "title": "Upcoming Deadline",
+        "subject": "Project Submission",
+        "group": "projgroup-X-2024-2",
+        "dateTime": "03/01/2025 - 23:59",
+        "studentRequests": [
+          { "id": 3, "name": "Alice Johnson", "username": "alicej789", "status": null },
+          { "id": 4, "name": "Bob Brown", "username": "bobbrown321", "status": null }
+        ]
+      }
+    ]
+  }
