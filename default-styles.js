@@ -21,7 +21,6 @@ export const defaultStyles = {
     color: colors.black,
   },
 
-  // New Styles for GroupRequests screen
   backButton: {
     backgroundColor: "transparent",
     padding: 10,
@@ -41,9 +40,8 @@ export const defaultStyles = {
     paddingBottom: 10,
   },
 
-  // New Styles for RequestItem screen
   requestCard: {
-    flexDirection: "row", // Arrange items in a row
+    flexDirection: "row", 
     alignItems: "center",
     backgroundColor: colors.white,
     padding: 10,
@@ -52,33 +50,33 @@ export const defaultStyles = {
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2, // For Android shadow
+    elevation: 2, 
     marginVertical: 10,
   },
   userInfo: {
-    flex: 1, // Take up remaining space
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    marginLeft: -45, // Ensure no extra left margin
+    marginLeft: -45,
   },
   avatar: {
     width: 40,
     height: 40,
     backgroundColor: colors.gray,
-    borderRadius: 20, // Circular avatar
-    marginRight: 5, // Reduce spacing between avatar and text
+    borderRadius: 20, 
+    marginRight: 5, 
   },
   userName: {
     fontWeight: "bold",
-    marginBottom: 2, // Add slight spacing between name and username
+    marginBottom: 2, 
   },
   username: {
     fontSize: 12,
     color: colors.gray,
   },
   buttons: {
-    flexDirection: "column", // Stack buttons vertically
-    marginLeft: 10, // Add space between user info and buttons
+    flexDirection: "column", 
+    marginLeft: 10, 
   },
   acceptBtn: {
     backgroundColor: colors.green,
@@ -92,7 +90,7 @@ export const defaultStyles = {
     borderRadius: 5,
   },
   buttonPlaceholder: {
-    height: 70, // Reserve space for two buttons (adjust as needed)
+    height: 70, 
     justifyContent: "center",
   },
   accepted: {
@@ -119,9 +117,9 @@ export const defaultStyles = {
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2, // For Android shadow
+    elevation: 2, 
     marginVertical: 10,
-    flex: 1, // Allow the card to take up remaining space
+    flex: 1, 
   },
   
   announcement: {
