@@ -1,15 +1,17 @@
-import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-import NotificationsScreen from '../screens/NotificationsScreen';
-import GroupRequests from '../screens/GroupRequests';
+import React from "react";
+import { createStackNavigator } from "@react-navigation/stack";
+import NotificationsScreen from "../screens/NotificationsScreen";
+import GroupRequests from "../screens/GroupRequests";
+import AnnouncementDetails from "../screens/AnnouncementDetails";
 
 const Stack = createStackNavigator();
 
 const NotificationNavigator = () => {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="NotificationsHome" component={NotificationsScreen} />
       <Stack.Screen name="GroupRequests" component={GroupRequests} />
+      <Stack.Screen name="AnnouncementDetails" component={AnnouncementDetails} />
     </Stack.Navigator>
   );
 };

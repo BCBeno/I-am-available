@@ -7,18 +7,16 @@ const RequestItem = ({ user, onStatusChange }) => {
   const [status, setStatus] = useState(null);
 
   const handlePress = (newStatus) => {
-    setStatus(newStatus); // Set the status locally
-    onStatusChange(user.id, newStatus); // Notify the parent component
+    setStatus(newStatus); 
+    onStatusChange(user.id, newStatus); 
   };
 
-  // Hide the component if the status is set
   if (status) {
     return null;
   }
 
   return (
     <View style={defaultStyles.requestCard}>
-      {/* User Info */}
       <View style={defaultStyles.userInfo}>
         <View style={defaultStyles.avatar}></View>
         <View>
@@ -27,7 +25,6 @@ const RequestItem = ({ user, onStatusChange }) => {
         </View>
       </View>
 
-      {/* Buttons */}
       <View style={defaultStyles.buttons}>
         <TouchableOpacity
           onPress={() => handlePress("accepted")}

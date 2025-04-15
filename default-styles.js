@@ -5,6 +5,7 @@ export const defaultStyles = {
     flex: 1,
     backgroundColor: colors.white,
     padding: 20,
+    paddingTop: 60,
   },
   button: {
     backgroundColor: colors.primary,
@@ -37,6 +38,7 @@ export const defaultStyles = {
   groupId: {
     fontSize: 12,
     color: colors.gray,
+    paddingBottom: 10,
   },
 
   // New Styles for RequestItem screen
@@ -104,10 +106,9 @@ export const defaultStyles = {
     marginTop: 10
   },
 
-  // Scrollable List for Requests
   requestList: {
-    flex: 1, // Allow the list to take up remaining space
-    marginTop: 10, // Add spacing between the group info and the list
+    flex: 1, 
+    marginTop: 10,
   },
 
   bigCard: {
@@ -121,5 +122,17 @@ export const defaultStyles = {
     elevation: 2, // For Android shadow
     marginVertical: 10,
     flex: 1, // Allow the card to take up remaining space
+  },
+  
+  announcement: {
+    backgroundColor: "lightgray",
+    elevation: 3,
+    overflow: "hidden",
+    padding: 20,
+    borderRadius: 10,
+    fontSize: 16,
+    color: colors.black,
+    marginVertical: 10,
+    lineHeight: 22,
   },
 };

@@ -8,13 +8,11 @@ const GroupRequests = () => {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Get the notification passed from the previous screen
   const notification = route.params?.notification;
   const [studentRequests, setStudentRequests] = useState(
     notification?.studentRequests || []
   );
 
-  // Fallback group info if no notification is passed
   const groupInfo = notification
     ? {
         name: notification.subject,
@@ -26,7 +24,6 @@ const GroupRequests = () => {
       };
 
   const handleStatusChange = (id, newStatus) => {
-    // Remove the user from the list after their request is handled
     setStudentRequests((prevRequests) =>
       prevRequests.filter((request) => request.id !== id)
     );
@@ -48,12 +45,13 @@ const GroupRequests = () => {
         <Text style={defaultStyles.groupName}>{groupInfo.name}</Text>
         <Text style={defaultStyles.groupId}>{groupInfo.id}</Text>
 
-        <ScrollView style={defaultStyles.requestList}>
+        <ScrollView style={defaultStyles.requestList}
+          showsVerticalScrollIndicator={false}>
           {studentRequests.map((user) => (
             <RequestItem
               key={user.id}
               user={user}
-              onStatusChange={handleStatusChange} // Pass the function here
+              onStatusChange={handleStatusChange} 
             />
           ))}
         </ScrollView>
