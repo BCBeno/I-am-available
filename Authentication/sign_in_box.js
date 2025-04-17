@@ -17,28 +17,30 @@ import ScreenWrapper from './ScreenWrapper';
 import { authenticateUser } from '../Fakedatabase/fakeDB'; //  TODO: Replace with real API login call
 // import AsyncStorage from '@react-native-async-storage/async-storage'; //  Optional: For JWT storage later
 
-const SignInBox = () => {
-  const navigation = useNavigation();
+const SignInBox = ({ navigation, setLoggedInUser }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
 
   const handleSignIn = async () => {
     if (!username || !password) {
       Alert.alert('Missing info', 'Please enter both username and password.');
       return;
     }
-
-    
-    //  Current mock logic (temporary)
+  
     const user = authenticateUser(username, password);
-
+  
     if (user) {
-      console.log('User authenticated:', user);
-      navigation.navigate('Home', { user }); //  TEMP: pass user directly to Home screen
+      setLoggedInUser(user); // This sets the state in App.js and navigates to Profile
     } else {
       Alert.alert('Login failed', 'Invalid hashtag or password.');
     }
   };
+  
+  
+
+    
+
 
   return (
     <ScreenWrapper>
@@ -75,11 +77,19 @@ const SignInBox = () => {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-              <Text style={styles.bottomText}>
-                Not registered yet? <Text style={styles.signUpLink}>Sign Up</Text>
-              </Text>
-            </TouchableOpacity>
+                                <TouchableOpacity
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setTimeout(() => {
+                          navigation.navigate('SignUp');
+                        }, 100);
+                      }}
+                    >
+                      <Text style={styles.bottomText}>
+                        Not registered yet? <Text style={styles.signUpLink}>Sign Up</Text>
+                      </Text>
+                    </TouchableOpacity>
+
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

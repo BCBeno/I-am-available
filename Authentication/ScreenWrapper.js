@@ -46,6 +46,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 30,
+    paddingBottom: 100,
   },
   logo: {
     width: 150,
@@ -53,6 +54,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 40,
   },
+  
 });
 
 export default ScreenWrapper;

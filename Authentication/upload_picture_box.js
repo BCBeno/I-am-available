@@ -1,66 +1,75 @@
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
-import {  View,  Text,  Image,  TouchableOpacity,  StyleSheet,  Platform,  KeyboardAvoidingView,  ScrollView,  TouchableWithoutFeedback,Keyboard,Alert,} from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Alert,
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useNavigation } from '@react-navigation/native';
 import ScreenWrapper from './ScreenWrapper';
 import defaultphoto from '../assets/defaulticon.png';
-import { addUser } from '../Fakedatabase/fakeDB'; //  TODO: replace this with real API POST call
+import { addUser } from '../Fakedatabase/fakeDB';
+import * as FileSystem from 'expo-file-system';
+
 
 const ProfilePictureUploadBox = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { name, userHashtag, password } = route.params || {};
-
-  // defensive check
-  if (!name || !userHashtag || !password) {
-    useEffect(() => {
-      Alert.alert('Error', 'User not found. Please sign up again.');
-      navigation.navigate('SignUp');
-    }, []);
-    return null;
-  }
+  const user = route.params || {}; 
 
   const [photoBase64, setPhotoBase64] = useState(null);
 
+  // Defensive check
+  useEffect(() => {
+    if (!user?.name || !user?.hashtag || !user?.password) {
+      Alert.alert('Error', 'User data is incomplete. Please sign up again.');
+      navigation.navigate('SignUp');
+    }
+  }, []);
+
   const handleFileChange = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-
-      // [expo-image-picker] MediaTypeOptions is deprecated
-      // But it works for now
-   
-      mediaTypes: ImagePicker.MediaTypeOptions.Image,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
-      base64: true, 
+      base64: true,
     });
 
-    if (!result.canceled && result.assets[0].base64) {
+    if (!result.canceled && result.assets[0]?.base64) {
       const base64String = result.assets[0].base64;
       setPhotoBase64(base64String);
     }
   };
 
-  const handleSignUp = async () => {
+  const handleSignUp = () => {
     if (!photoBase64) {
       Alert.alert('Wait!', 'Please select a photo before signing up.');
       return;
     }
 
-    const newUser = {
-      name,
-      hashtag: userHashtag,
-      password,
-      photo: photoBase64, //  sent as base64
+    const finalUser = {
+      ...user,
+      photo: `data:image/jpeg;base64,${photoBase64}`,
     };
+    
 
-   
+    addUser(finalUser);
+    console.log('✅ Final user saved:', {
+      ...finalUser,
+      photo: `base64(${photoBase64.slice(0, 30)}...)`,
+    });
 
-    addUser(newUser); //  Temporary mock function for local testing
-    console.log('Final user saved:', newUser);
     Alert.alert('Success', 'User registered successfully!');
-    navigation.navigate('SignIn'); //  TODO: navigate to Home screen and store token
+    navigation.navigate('SignIn');
   };
 
   return (

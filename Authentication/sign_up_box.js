@@ -10,8 +10,11 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import ScreenWrapper from './ScreenWrapper';
 import { isHashtagTaken } from '../Fakedatabase/fakeDB'; //  TODO: replace with API call to check if hashtag is taken
+import { Keyboard } from 'react-native';
+import uuid from 'react-native-uuid';
 
 const SignUpBox = () => {
+
   const navigation = useNavigation();
   const [name, setName] = useState('');
   const [userHashtag, setUserHashtag] = useState('');
@@ -23,36 +26,41 @@ const SignUpBox = () => {
       Alert.alert('Error', 'Please fill out all fields.');
       return;
     }
-
+  
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match.');
       return;
     }
-
-    //  TODO: Replace with API call to check for existing username
-    const alreadyExists = isHashtagTaken(userHashtag); // TEMP for now
+  
+    const alreadyExists = isHashtagTaken(userHashtag);
     if (alreadyExists) {
       Alert.alert('Error', 'That hashtag is already taken.');
       return;
     }
-
-    // Prepare data for next step (photo upload)
+  
+    // Prepare user object with placeholder photo and empty roles
     const newUser = {
-      name,
+      id: uuid.v4(),
+      name: name,
       hashtag: userHashtag,
-      password,
-      photo: '', // will be updated on photo step
+      password: password,
+      photo: '',
+      roles: [],
+      groups: [],
+      availabilities: [],
+      chats:[],
     };
+    
+    
+  
+    //Pass the full user object to the ProfilePicture screen
+    Keyboard.dismiss(); //  dismiss keyboard first
 
-
-
-    //  Pass user info to next screen
-    navigation.navigate('ProfilePicture', {
-      name: newUser.name,
-      userHashtag: newUser.hashtag,
-      password: newUser.password,
-    });
+    setTimeout(() => {
+      navigation.navigate('ProfilePicture', newUser); //  delay avoids visual glitch
+    }, 100);
   };
+  
 
   return (
     <ScreenWrapper>
@@ -97,11 +105,19 @@ const SignUpBox = () => {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
-          <Text style={styles.bottomText}>
-            Already registered? <Text style={styles.signUpLink}>Login</Text>
-          </Text>
-        </TouchableOpacity>
+                  <TouchableOpacity
+            onPress={() => {
+              Keyboard.dismiss();
+              setTimeout(() => {
+                navigation.navigate('SignIn');
+              }, 100);
+            }}
+          >
+            <Text style={styles.bottomText}>
+              Already registered? <Text style={styles.signUpLink}>Login</Text>
+            </Text>
+          </TouchableOpacity>
+
       </View>
     </ScreenWrapper>
   );
