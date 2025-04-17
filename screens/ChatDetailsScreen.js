@@ -12,8 +12,8 @@ import {
 
 export default function ChatDetailsScreen({ route }) {
   const { chat } = route.params;
-  const [newMessage, setNewMessage] = useState(""); // State for new message
-  const [messages, setMessages] = useState(chat.messages); // State for messages
+  const [newMessage, setNewMessage] = useState(""); 
+  const [messages, setMessages] = useState(chat.messages); 
 
   const renderMessage = ({ item }) => (
     <View
@@ -25,7 +25,7 @@ export default function ChatDetailsScreen({ route }) {
       <Text
         style={[
           styles.messageText,
-          item.sender !== chat.participants[0] && styles.receivedMessageText, // Apply different text color for received messages
+          item.sender !== chat.participants[0] && styles.receivedMessageText, 
         ]}
       >
         {item.text}
@@ -37,18 +37,17 @@ export default function ChatDetailsScreen({ route }) {
     if (newMessage.trim() === "") return;
 
     const message = {
-      sender: chat.participants[0], // Dynamically set the sender as the first participant
+      sender: chat.participants[0], 
       text: newMessage,
       timestamp: new Date().toISOString(),
     };
 
-    setMessages([...messages, message]); // Add the new message to the list
-    setNewMessage(""); // Clear the input field
+    setMessages([...messages, message]); 
+    setNewMessage(""); 
   };
 
   return (
     <View style={styles.container}>
-      {/* Chat Header */}
       <View style={styles.header}>
         <View style={styles.avatar} />
         <View>
@@ -57,9 +56,7 @@ export default function ChatDetailsScreen({ route }) {
         </View>
       </View>
 
-      {/* Chat Body */}
       <View style={{ flex: 1 }}>
-        {/* Messages List */}
         <FlatList
           data={messages}
           keyExtractor={(item, index) => index.toString()}
@@ -67,7 +64,6 @@ export default function ChatDetailsScreen({ route }) {
           contentContainerStyle={styles.messagesList}
         />
 
-        {/* Input Field */}
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -118,7 +114,7 @@ const styles = StyleSheet.create({
   },
   messagesList: {
     padding: 15,
-    flexGrow: 1, // Ensures the list takes up available space
+    flexGrow: 1, 
   },
   messageContainer: {
     maxWidth: "70%",
@@ -128,22 +124,22 @@ const styles = StyleSheet.create({
   },
   sentMessage: {
     alignSelf: "flex-end",
-    backgroundColor: "#800080", // Purple background for sent messages
+    backgroundColor: "#800080", 
     borderTopRightRadius: 0,
   },
   receivedMessage: {
     alignSelf: "flex-start",
-    backgroundColor: "#fff", // White background for received messages
+    backgroundColor: "#fff", 
     borderTopLeftRadius: 0,
     borderWidth: 1,
     borderColor: "#ccc",
   },
   messageText: {
     fontSize: 16,
-    color: "#fff", // Default text color for sent messages
+    color: "#fff", 
   },
   receivedMessageText: {
-    color: "#000", // Black text color for received messages
+    color: "#000", 
   },
   inputContainer: {
     flexDirection: "row",
@@ -161,7 +157,7 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "#f0f0f0",
     marginRight: 10,
-    maxHeight: 100, // Limit the height of the input field
+    maxHeight: 100, 
   },
   sendButton: {
     backgroundColor: "#800080",
