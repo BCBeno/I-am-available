@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { defaultStyles } from "../default-styles"; // Import the default styles
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -11,17 +11,21 @@ const RequestItem = ({ user, onStatusChange }) => {
     onStatusChange(user.id, newStatus); 
   };
 
+  const handleUserPress = () => {
+    Alert.alert("User Info", `Name: ${user.name}\nHashtag: #${user.hashtag}\nMessage: ${user.message}`, [{text: "OK"}]);
+  }
+
   if (status) {
     return null;
   }
 
   return (
-    <View style={defaultStyles.requestCard}>
+    <TouchableOpacity style={defaultStyles.requestCard} onPress={() => handleUserPress()}>
       <View style={defaultStyles.userInfo}>
         <View style={defaultStyles.avatar}></View>
         <View>
           <Text style={defaultStyles.userName}>{user.name}</Text>
-          <Text style={defaultStyles.username}>@{user.username}</Text>
+          <Text style={defaultStyles.username}>#{user.hashtag}</Text>
         </View>
       </View>
 
@@ -39,7 +43,7 @@ const RequestItem = ({ user, onStatusChange }) => {
           <MaterialIcons name="disabled-by-default" size={28} color="red" />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

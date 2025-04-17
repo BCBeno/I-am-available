@@ -15,8 +15,51 @@
       "group": "projgroup-X-2024-2",
       "dateTime": "03/01/2025 - 23:59",
       "studentRequests": [
-        { "id": 3, "name": "Alice Johnson", "username": "alicej789", "status": null },
-        { "id": 4, "name": "Bob Brown", "username": "bobbrown321", "status": null }
+        { "id": 3, "name": "Alice Johnson", "hashtag": "alicej789", "status": null, "message": "Hello, I would like to join your group for the project." },
+        { "id": 4, "name": "Bob Brown", "hashtag": "bobbrown321", "status": null, "message": "Hi, I'm interested in joining your group for the project." },
+        { "id": 5, "name": "Charlie Davis", "hashtag": "charlied123", "status": null, "message": "Hello, I would like to join your group for the project." },
+        { "id": 6, "name": "Diana Evans", "hashtag": "dianaevans456", "status": null, "message": "Hi, I'm interested in joining your group for the project." }
+      ]
+    }
+  ],
+  "chats": [
+    {
+      "id": "1",
+      "participants": ["Aluno", "Paolo Jorge"],
+      "hashtag": "paolojorge",
+      "isRead": 0,
+      "messages": [
+        { "sender": "Aluno", "text": "Hello!", "timestamp": "2025-04-17T10:00:00Z" },
+        { "sender": "Paolo Jorge", "text": "Hi there!", "timestamp": "2025-04-17T10:01:00Z" },
+        { "sender": "Aluno", "text": "How are you?", "timestamp": "2025-04-17T10:02:00Z" },
+        { "sender": "Paolo Jorge", "text": "I'm good, thanks! How about you?", "timestamp": "2025-04-17T10:03:00Z" },
+        { "sender": "Aluno", "text": "Doing well, just busy with assignments.", "timestamp": "2025-04-17T10:04:00Z" },
+        { "sender": "Paolo Jorge", "text": "I understand. We all have a lot to do.", "timestamp": "2025-04-17T10:05:00Z" },
+        { "sender": "Aluno", "text": "Yes, especially with the project coming up.", "timestamp": "2025-04-17T10:06:00Z" },
+        { "sender": "Paolo Jorge", "text": "Exactly! Let's work hard!", "timestamp": "2025-04-17T10:07:00Z" },
+        { "sender": "Aluno", "text": "Agreed! We can do this!", "timestamp": "2025-04-17T10:08:00Z" },
+        { "sender": "Paolo Jorge", "text": "Yes! Let's meet up later to discuss.", "timestamp": "2025-04-17T10:09:00Z" },
+        { "sender": "Aluno", "text": "Sounds good! See you later.", "timestamp": "2025-04-17T10:10:00Z" }
+      ]
+    },
+    {
+      "id": "2",
+      "participants": ["Aluno", "Prof. Maria"],
+      "hashtag": "prof.maria",
+      "isRead": 1,
+      "messages": [
+        { "sender": "Aluno", "text": "Can you please review my project?", "timestamp": "2025-04-17T10:05:00Z" },
+        { "sender": "Prof. Maria", "text": "Sure! I'll take a look.", "timestamp": "2025-04-17T10:06:00Z" }
+      ]
+    },
+    {
+      "id": "3",
+      "participants": ["Aluno", "Prof. Carlos"],
+      "hashtag": "prof.carlos",
+      "isRead": 0,
+      "messages": [
+        { "sender": "Aluno", "text": "I have a question about the assignment.", "timestamp": "2025-04-17T10:10:00Z" },
+        { "sender": "Prof. Carlos", "text": "What is your question?", "timestamp": "2025-04-17T10:11:00Z" }
       ]
     }
   ]
