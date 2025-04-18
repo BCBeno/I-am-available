@@ -26,6 +26,7 @@
     {
       "id": "1",
       "participants": ["Aluno", "Paolo Jorge"],
+      "pId": [1,4],
       "hashtag": "paolojorge",
       "isRead": 0,
       "messages": [
@@ -45,6 +46,7 @@
     {
       "id": "2",
       "participants": ["Aluno", "Prof. Maria"],
+      "pId": [1,2],
       "hashtag": "prof.maria",
       "isRead": 1,
       "messages": [
@@ -55,11 +57,62 @@
     {
       "id": "3",
       "participants": ["Aluno", "Prof. Carlos"],
+      "pId": [1,3],
       "hashtag": "prof.carlos",
       "isRead": 0,
       "messages": [
         { "sender": "Aluno", "text": "I have a question about the assignment.", "timestamp": "2025-04-17T10:10:00Z" },
         { "sender": "Prof. Carlos", "text": "What is your question?", "timestamp": "2025-04-17T10:11:00Z" }
+      ]
+    }
+  ],
+  "profiles":[
+    {
+      "id": 1,
+      "name": "Aluno",
+      "hashtag": "alunoteste",
+      "groups": []
+    },
+    {
+      "id": 2,
+      "name": "Prof. Maria",
+      "hashtag": "prof.maria",
+      "groups":[{"id": 1, "name": "Desenvolvimento Multiplataforma", "hashtag": "dmgroup-A-2024-2", "members": 45},
+      {"id": 2, "name": "Projeto de Software", "hashtag": "projgroup-X-2024-2", "members": 30},
+      {"id": 3, "name": "Grupo de Estudos", "hashtag": "studygroup-B-2024-2", "members": 10},
+      {"id": 4, "name": "Grupo de Pesquisa", "hashtag": "researchgroup-C-2024-2", "members": 5}],
+      "availability": [
+        { "day": "Monday", "time": "10:00-12:00" },
+        { "day": "Wednesday", "time": "14:00-16:00" },
+        { "day": "Friday", "time": "09:00-11:00" }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Prof. Carlos",
+      "hashtag": "prof.carlos",
+      "groups":[{"id": 1, "name": "Desenvolvimento Multiplataforma", "hashtag": "dmgroup-A-2024-2", "members": 45},
+      {"id": 2, "name": "Projeto de Software", "hashtag": "projgroup-X-2024-2", "members": 30},
+      {"id": 3, "name": "Grupo de Estudos", "hashtag": "studygroup-B-2024-2", "members": 10},
+      {"id": 4, "name": "Grupo de Pesquisa", "hashtag": "researchgroup-C-2024-2", "members": 5}],
+      "availability": [
+        { "day": "Tuesday", "time": "10:00-12:00" },
+        { "day": "Thursday", "time": "14:00-16:00" },
+        { "day": "Saturday", "time": "09:00-11:00" }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Paolo Jorge",
+      "hashtag": "paolojorge",
+      "groups":[{"id": 1, "name": "Desenvolvimento Platfora", "hashtag": "dmgroup-A-2024-2", "members": 45},
+      {"id": 2, "name": "Projeto de Software", "hashtag": "projgroup-X-2024-2", "members": 30},
+      {"id": 3, "name": "Grupo de Estudos", "hashtag": "studygroup-B-2024-2", "members": 10},
+      {"id": 4, "name": "Grupo de Dudui", "hashtag": "researchgroup-C-2024-2", "members": 5}],
+      "availability": [
+        {"date": "17-04-2025", "time": "10:00-12:00"},
+        {"date": "18-04-2025", "time": "14:00-16:00"},
+        {"date": "19-04-2025", "time": "09:00-11:00"}
       ]
     }
   ]

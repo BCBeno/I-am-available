@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert, Image } from "react-native";
 import { defaultStyles } from "../default-styles";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { chats } from "../data/fakeDatabase.json";
+import defaultAvatar from "../assets/default-avatar.png";
 
 export default function ChatScreen() {
   const [chatData, setChatData] = useState(chats);
@@ -55,7 +56,7 @@ export default function ChatScreen() {
       }}
     >
       <View style={styles.chatInfo}>
-        <View style={styles.avatar} />
+        <Image source={{ uri: Image.resolveAssetSource(defaultAvatar).uri }} style={styles.avatar}/>
         <View>
           <Text
             style={[

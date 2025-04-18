@@ -8,9 +8,11 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Image
 } from "react-native";
+import defaultAvatar from "../assets/default-avatar.png";
 
-export default function ChatDetailsScreen({ route }) {
+export default function ChatDetailsScreen({ route, navigation }) {
   const { chat } = route.params;
   const [newMessage, setNewMessage] = useState(""); 
   const [messages, setMessages] = useState(chat.messages); 
@@ -49,9 +51,15 @@ export default function ChatDetailsScreen({ route }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.avatar} />
+        <Image source={{ uri: Image.resolveAssetSource(defaultAvatar).uri }} style={styles.avatar}/>
         <View>
-          <Text style={styles.chatName}>{chat.participants[1]}</Text>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("Profile", {id: chat.pId[1]})
+            }
+          >
+            <Text style={styles.chatName}>{chat.participants[1]}</Text>
+          </TouchableOpacity>
           <Text style={styles.chatHashtag}>#{chat.hashtag}</Text>
         </View>
       </View>
