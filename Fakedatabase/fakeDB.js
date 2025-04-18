@@ -28,12 +28,12 @@ const fakeDB = {
       ],
       availabilities: [
         {
-          id: "avail-1",
-          roleHashtag: "lucas-tutor",
-          day: "Monday",
-          time: "10:00 - 12:00",
-          location: "Zoom: zoom.us/j/1234567890",
-          groupId: "group-1"
+          roleHashtag: "lucas-student",
+          startTime: "08:00",
+          endTime: "10:00",
+          repeat: ["S", "M", "T", "W", "T", "F", "S"], // or a date field
+          location: "Zoom",
+          group: "Group A"
         },
         {
           id: "avail-2",
