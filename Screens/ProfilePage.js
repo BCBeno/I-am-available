@@ -19,8 +19,7 @@ import * as FileSystem from 'expo-file-system';
 
 
 
-const ProfileScreen = ({ user }) => {
-
+const ProfileScreen = ({ user, setLoggedInUser }) => {
   const navigation = useNavigation();
   const userFromDB = getUser(user.hashtag);
   
@@ -275,41 +274,34 @@ const ProfileScreen = ({ user }) => {
 
 
  
-    <TouchableOpacity
-  style={styles.confirmButton}
-  onPress={() => {
-    let updatedTempUser = { ...tempUser };
-  
-    // Save any unsaved role edits
-    if (editingRole && editedRoleName.trim()) {
-      updatedTempUser.roles = updatedTempUser.roles.map((r) =>
-        r.hashtag === editingRole
-          ? { ...r, name: editedRoleName.trim() }
-          : r
-      );
-    }
-  
-    // Save profile image to correct key
-    if (tempUser?.profileImage) {
-      updatedTempUser.photo = tempUser.profileImage;
-    }
-  
-    // Update the fake DB
-    updateUser(mockUser.hashtag, updatedTempUser);
-  
-    // Update the UI
-    setMockUser(updatedTempUser);
-    setTempUser(null);
-    setEditMode(false);
-    setEditingRole(null);
-    setEditedRoleName('');
-  }}
-  
-  
->
-  <Text style={styles.confirmText}>Confirm</Text>
-</TouchableOpacity>
+<TouchableOpacity
+    style={styles.confirmButton}
+    onPress={() => {
+      let updatedTempUser = { ...tempUser };
 
+      if (editingRole && editedRoleName.trim()) {
+        updatedTempUser.roles = updatedTempUser.roles.map((r) =>
+          r.hashtag === editingRole ? { ...r, name: editedRoleName.trim() } : r
+        );
+      }
+
+      if (tempUser?.profileImage) {
+        updatedTempUser.photo = tempUser.profileImage;
+      }
+
+      updateUser(mockUser.hashtag, updatedTempUser);
+      setMockUser(updatedTempUser);
+      setTempUser(null);
+      setEditMode(false);
+      setEditingRole(null);
+      setEditedRoleName('');
+
+      // Clearly set global user state:
+      setLoggedInUser(updatedTempUser);
+    }}
+  >
+    <Text style={styles.confirmText}>Confirm</Text>
+  </TouchableOpacity>
 
   </View>
 )}

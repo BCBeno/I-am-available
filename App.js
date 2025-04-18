@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AuthenticationFlow from './Navigation/AuthenticationFlow';
-import ProfileFlow from './Navigation/ProfileFlow';
+import MainTabNavigator from './Navigation/MainTabNavigator';
 import { StatusBar } from 'expo-status-bar';
 
 export default function App() {
@@ -12,7 +12,7 @@ export default function App() {
       {!loggedInUser ? (
         <AuthenticationFlow setLoggedInUser={setLoggedInUser} />
       ) : (
-        <ProfileFlow user={loggedInUser} />
+        <MainTabNavigator user={loggedInUser} setLoggedInUser={setLoggedInUser} />
       )}
       <StatusBar style="auto" />
     </NavigationContainer>
