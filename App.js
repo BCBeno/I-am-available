@@ -1,25 +1,20 @@
-import { NavigationContainer } from "@react-navigation/native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import HomeScreen from "./screens/HomeScreen";
-import EventsScreen from "./screens/EventsScreen";
-import BottomBar from "./components/BottomBar";
-import NotificationNavigator from "./navigation/NotificationNavigator";
-import ChatNavigator from "./navigation/ChatNavigator"; // Import ChatNavigator
-
-const Tab = createBottomTabNavigator();
+import React, { useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import AuthenticationFlow from './Navigation/AuthenticationFlow';
+import MainTabNavigator from './Navigation/MainTabNavigator';
+import { StatusBar } from 'expo-status-bar';
 
 export default function App() {
+  const [loggedInUser, setLoggedInUser] = useState(null);
+
   return (
     <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{ headerShown: false }}
-        tabBar={(props) => <BottomBar {...props} />}
-      >
-        <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Events" component={EventsScreen} />
-        <Tab.Screen name="Notifications" component={NotificationNavigator} />
-        <Tab.Screen name="Chat" component={ChatNavigator} />
-      </Tab.Navigator>
+      {!loggedInUser ? (
+        <AuthenticationFlow setLoggedInUser={setLoggedInUser} />
+      ) : (
+        <MainTabNavigator user={loggedInUser} setLoggedInUser={setLoggedInUser} />
+      )}
+      <StatusBar style="auto" />
     </NavigationContainer>
   );
 }

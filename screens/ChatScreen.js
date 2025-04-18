@@ -5,18 +5,20 @@ import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { chats } from "../data/fakeDatabase.json";
 import defaultAvatar from "../assets/default-avatar.png";
+import TopBar from "../components/TopBar";
 
-export default function ChatScreen() {
-  const [chatData, setChatData] = useState(chats);
+export default function ChatScreen({ user }) {
+  const [originalChatData, setOriginalChatData] = useState(chats); // Keep the original data
+  const [chatData, setChatData] = useState(chats); // Filtered data for display
   const [searchQuery, setSearchQuery] = useState("");
   const navigation = useNavigation();
 
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim() === "") {
-      setChatData(chats);
+      setChatData(originalChatData); // Reset to the updated original data
     } else {
-      const filteredChats = chats.filter((chat) =>
+      const filteredChats = originalChatData.filter((chat) =>
         chat.participants[1].toLowerCase().includes(query.toLowerCase())
       );
       setChatData(filteredChats);
@@ -25,19 +27,20 @@ export default function ChatScreen() {
 
   const handleRemovePress = (chat) => {
     Alert.alert(
-      "Delete Chat", 
-      "Are you sure you want to delete this chat?", 
+      "Delete Chat",
+      "Are you sure you want to delete this chat?",
       [
         {
-          text: "Cancel", 
+          text: "Cancel",
           style: "cancel",
         },
         {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            const updatedChatData = chatData.filter((item) => item.id !== chat.id);
-            setChatData(updatedChatData);
+            const updatedChatData = originalChatData.filter((item) => item.id !== chat.id);
+            setOriginalChatData(updatedChatData); // Update the original data
+            setChatData(updatedChatData); // Update the displayed data
           },
         },
       ]
@@ -48,15 +51,16 @@ export default function ChatScreen() {
     <TouchableOpacity
       style={styles.chatItem}
       onPress={() => {
-        const updatedChatData = chatData.map((chat) =>
+        const updatedChatData = originalChatData.map((chat) =>
           chat.id === item.id ? { ...chat, isRead: 1 } : chat
         );
+        setOriginalChatData(updatedChatData);
         setChatData(updatedChatData);
         navigation.navigate("ChatDetails", { chat: item });
       }}
     >
       <View style={styles.chatInfo}>
-        <Image source={{ uri: Image.resolveAssetSource(defaultAvatar).uri }} style={styles.avatar}/>
+        <Image source={{ uri: Image.resolveAssetSource(defaultAvatar).uri }} style={styles.avatar} />
         <View>
           <Text
             style={[
@@ -76,16 +80,24 @@ export default function ChatScreen() {
   );
 
   return (
-    <View style={defaultStyles.container}>
-      <View style={styles.searchBar}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search"
-          value={searchQuery}
-          onChangeText={handleSearch}
-        />
-        <MaterialIcons name="search" size={24} color="gray" />
+    <View style={styles.container}>
+      <TopBar profileImage={user.photo} />
+      {/* TopBar */}
+
+      {/* Search Bar Overlay */}
+      <View style={styles.searchBarOverlay}>
+        <View style={styles.searchBar}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search"
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
+          <MaterialIcons name="search" size={24} color="gray" />
+        </View>
       </View>
+
+      {/* Chat List */}
       <FlatList
         data={chatData}
         keyExtractor={(item) => item.id}
@@ -97,14 +109,28 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
+  topBarContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  searchBarOverlay: {
+    position: "absolute",
+    top: 50,
+    left: 0,
+    right: 100,
+    zIndex: 1,
+    paddingHorizontal: 10,
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f0f0f0",
-    borderRadius: 10,
+    borderRadius: 20,
     paddingHorizontal: 10,
-    marginBottom: 20,
-    elevation: 5,
+    flex: 1,
   },
   searchInput: {
     flex: 1,
@@ -112,6 +138,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   chatList: {
+    paddingTop: 10,
     paddingBottom: 20,
   },
   chatItem: {
