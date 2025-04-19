@@ -16,22 +16,25 @@ import { useNavigation } from '@react-navigation/native';
 import ScreenWrapper from './ScreenWrapper';
 import { authenticateUser } from '../Fakedatabase/fakeDB'; //  TODO: Replace with real API login call
 // import AsyncStorage from '@react-native-async-storage/async-storage'; //  Optional: For JWT storage later
-
+import SHA256 from 'crypto-js/sha256';
 const SignInBox = ({ navigation, setLoggedInUser }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
 
   const handleSignIn = async () => {
+    
     if (!username || !password) {
       Alert.alert('Missing info', 'Please enter both username and password.');
       return;
     }
   
-    const user = authenticateUser(username, password);
+    const hashedPassword = SHA256(password).toString(); // hash before checking
+    const user = authenticateUser(username, hashedPassword);
   
     if (user) {
-      setLoggedInUser(user); // This sets the state in App.js and navigates to Profile
+      setLoggedInUser(user);
+      console.log("🔑 Hashed password:", hashedPassword);
     } else {
       Alert.alert('Login failed', 'Invalid hashtag or password.');
     }

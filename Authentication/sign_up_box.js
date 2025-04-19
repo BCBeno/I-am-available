@@ -13,6 +13,8 @@ import ScreenWrapper from './ScreenWrapper';
 import { isHashtagTaken } from '../Fakedatabase/fakeDB';
 import uuid from 'react-native-uuid';
 import { DEV_MODE } from '../config';
+import SHA256 from 'crypto-js/sha256';
+
 
 const SignUpBox = () => {
   const navigation = useNavigation();
@@ -20,7 +22,7 @@ const SignUpBox = () => {
   const [userHashtag, setUserHashtag] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
+  
   const validatePassword = (pass) => {
     const minLength = 8;
     const hasNumber = /\d/.test(pass);
@@ -35,18 +37,18 @@ const SignUpBox = () => {
       hasSpecial
     );
   };
-
+  
   const handleSignUp = async () => {
     if (!name || !userHashtag || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill out all fields.');
       return;
     }
-
+    
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match.');
       return;
     }
-
+    
     if (!DEV_MODE && !validatePassword(password)) {
       Alert.alert(
         'Weak Password',
@@ -54,18 +56,20 @@ const SignUpBox = () => {
       );
       return;
     }
-
+    
     const alreadyExists = isHashtagTaken(userHashtag);
     if (alreadyExists) {
       Alert.alert('Error', 'That hashtag is already taken.');
       return;
     }
-
+    
+    const hashedPassword = SHA256(password).toString();
+    
     const newUser = {
       id: uuid.v4(),
       name,
       hashtag: userHashtag,
-      password,
+      password: hashedPassword,
       photo: '',
       profiles: [],
       roles: [],
@@ -73,6 +77,7 @@ const SignUpBox = () => {
       availabilities: [],
       chats: [],
     };
+    
 
     Keyboard.dismiss();
     setTimeout(() => {
@@ -198,3 +203,20 @@ const styles = StyleSheet.create({
 });
 
 export default SignUpBox;
+
+/*
+NEW USER DATABASE ENTRY:
+{
+  id: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', // generated with uuid.v4()
+  name: 'Alex Santos',                        // user input
+  hashtag: 'alex123',                         // user input
+  password: '"e7cf3ef4f17c3999a94f2c6f612e8a888e5eab8f07fbb5c80b5e9766c8fdf9c3"                 // user input encrypted
+  photo: '',                                  // empty by default (will be added in profile picture screen) SAVED IN BASE64
+  profiles: [],                               // initialized empty
+  roles: [],                                  // initialized empty
+  groups: [],                                 // initialized empty
+  availabilities: [],                         // initialized empty
+  chats: [],                                  // initialized empty
+}
+
+*/ 
