@@ -87,7 +87,7 @@ const SignUpBox = () => {
           <Text style={styles.label}>Name</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter Name"
+            placeholder="Enter User Name"
             value={name}
             onChangeText={setName}
           />
@@ -95,7 +95,7 @@ const SignUpBox = () => {
           <Text style={styles.label}>User Hashtag</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. lucasalopes"
+            placeholder="Enter Hashtag"
             value={userHashtag}
             onChangeText={setUserHashtag}
           />
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 50,
   },
   signUpLink: {
     fontWeight: 'bold',

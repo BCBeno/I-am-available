@@ -7,6 +7,8 @@ import { DEV_MODE } from './config';
 
 const TASK_NAME = 'CHECK_AVAILABILITY_IN_RADIUS';
 
+///LOCATION BASED NOTIFICATIONS DO NOT WORK (finding out if the user is within the designated Radius works but the push notifications do not work)
+
 // Extracted function for reusability
 export async function runAvailabilityCheck() {
   try {

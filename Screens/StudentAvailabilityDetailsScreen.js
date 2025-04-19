@@ -8,7 +8,8 @@ import {
   Image,
   Platform,
   Alert,
-  ToastAndroid
+  ToastAndroid,
+  Linking
 } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import CalendarIcon from '../assets/Calendar.png';
@@ -49,7 +50,6 @@ export default function StudentAvailabilityDetailsScreen({ route, navigation }) 
     { label: 'S', full: 'Saturday' }
   ];
 
-
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -71,53 +71,57 @@ export default function StudentAvailabilityDetailsScreen({ route, navigation }) 
           </View>
         </View>
 
-
         {!availability.repeats && (
           <View style={[styles.iconRow, { marginBottom: 20 }]}>
-            <Image source={require('../assets/Calendar.png')} style={styles.calendarIcon} />
+            <Image source={CalendarIcon} style={styles.calendarIcon} />
             <View style={[styles.readOnlyField, { flex: 1 }]}>
-              <Text style={{ fontSize: 16, color: '#000' }}>{availability.date.replace(/-/g, '/')}</Text>
+              <Text style={{ fontSize: 16, color: '#000', textAlign: 'center' }}>
+                {availability.date.replace(/-/g, '/')}
+              </Text>
             </View>
           </View>
-)}
+        )}
 
-{availability.repeats && (
-  <View style={styles.iconRow}>
-    <Image source={require('../assets/Calendar.png')} style={styles.calendarIcon} />
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
-      {daysOfWeek.map((dayObj) => {
-        const isActive = availability.days.includes(dayObj.full);
-        return (
-          <View
-            key={dayObj.full}
-            style={[styles.dayButton, isActive && styles.activeDayButton]}
-          >
-            <Text style={[styles.dayButtonText, isActive && styles.activeDayButtonText]}>
-              {dayObj.label}
-            </Text>
+        {availability.repeats && (
+          <View style={styles.iconRow}>
+            <Image source={CalendarIcon} style={styles.calendarIcon} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
+              {daysOfWeek.map((dayObj) => {
+                const isActive = availability.days.includes(dayObj.full);
+                return (
+                  <View
+                    key={dayObj.full}
+                    style={[styles.dayButton, isActive && styles.activeDayButton]}
+                  >
+                    <Text style={[styles.dayButtonText, isActive && styles.activeDayButtonText]}>
+                      {dayObj.label}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
           </View>
-        );
-      })}
-    </View>
-  </View>
-)}
-
-
+        )}
 
         <Text style={styles.label}>Where?</Text>
         <View style={styles.iconRow}>
-          <View style={styles.radioOption}>
-            <View style={[styles.radioCircle, availability.locationType === 'onSite' && styles.selected]} />
-            <Text style={{ color: availability.locationType === 'onSite' ? '#7C0152' : '#333', fontWeight: 'bold' }}>On Site</Text>
+          <View style={{ flex: 1 }}>
+            <View style={styles.radioOption}>
+              <View style={[styles.radioCircle, availability.locationType === 'onSite' && styles.selected]} />
+              <Text style={{ color: availability.locationType === 'onSite' ? '#7C0152' : '#333', fontWeight: 'bold' }}>
+                On Site
+              </Text>
+            </View>
           </View>
-          <View style={{ width: 20 }} />
-          <View style={styles.radioOption}>
-            <View style={[styles.radioCircle, availability.locationType === 'remote' && styles.selected]} />
-            <Text style={{ color: availability.locationType === 'remote' ? '#7C0152' : '#333', fontWeight: 'bold' }}>Remote</Text>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <View style={styles.radioOption}>
+              <View style={[styles.radioCircle, availability.locationType === 'remote' && styles.selected]} />
+              <Text style={{ color: availability.locationType === 'remote' ? '#7C0152' : '#333', fontWeight: 'bold' }}>
+                Remote
+              </Text>
+            </View>
           </View>
         </View>
-
-
 
         {availability.locationType === 'onSite' && (
           <>
@@ -153,13 +157,31 @@ export default function StudentAvailabilityDetailsScreen({ route, navigation }) 
         )}
 
         <Text style={styles.label}>Complement</Text>
-        <Text style={styles.readOnlyField}>{availability.complement}</Text>
-
-
+        <Text
+          style={styles.readOnlyField}
+          selectable
+          suppressHighlighting={true}
+        >
+          {availability.complement.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+            if (part.match(/https?:\/\/[^\s]+/)) {
+              return (
+                <Text
+                  key={index}
+                  style={{ color: '#7C0152', textDecorationLine: 'underline' }}
+                  onPress={() => Linking.openURL(part)}
+                >
+                  {part}
+                </Text>
+              );
+            } else {
+              return <Text key={index}>{part}</Text>;
+            }
+          })}
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
-
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -191,33 +213,26 @@ const styles = StyleSheet.create({
   },
   iconRow: {
     flexDirection: 'row',
-    alignItems: 'center',       // vertical center
-    justifyContent: 'center',   // horizontal center 
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 10,
   },
   dayButton: {
-    paddingVertical: 12, 
-    paddingHorizontal: 14, 
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 10,
     backgroundColor: '#eee',
     marginRight: 5,
     marginBottom: 5,
-    minWidth: 28, 
+    minWidth: 28,
     alignItems: 'center',
   },
-  
   dayButtonText: {
-    fontSize: 13, 
-    color: '#000',
+    fontSize: 13,
     fontWeight: 'bold',
   },
-  
   activeDayButton: {
     backgroundColor: '#7C0152',
-  },
-  dayButtonText: {
-    color: '#000',
-    fontWeight: 'bold',
   },
   activeDayButtonText: {
     color: '#fff',
@@ -227,18 +242,6 @@ const styles = StyleSheet.create({
     height: 350,
     marginBottom: 10,
     borderRadius: 10,
-  },
-  confirmButton: {
-    backgroundColor: '#7C0152',
-    padding: 16,
-    borderRadius: 30,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  confirmText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
   },
   calendarIcon: {
     width: 20,
@@ -260,31 +263,5 @@ const styles = StyleSheet.create({
   },
   selected: {
     backgroundColor: '#7C0152',
-  },
-  toggleButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 18,
-    borderRadius: 25,
-    backgroundColor: '#ddd',
-    marginHorizontal: 5,
-  },
-  selectedToggle: {
-    backgroundColor: '#7C0152',
-  },
-  toggleButtonText: {
-    color: '#333',
-    fontWeight: '600',
-    fontFamily: 'Poppins',
-  },
-  selectedToggleText: {
-    color: '#fff',
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    gap: 10,
-  },
-
+  }
 });
-}

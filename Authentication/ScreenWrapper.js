@@ -11,7 +11,7 @@ import {
   Keyboard
 } from 'react-native';
 
-import background from '../assets/Background.png';
+import background from '../assets/background.png';
 import logo from '../assets/logo.png';
 
 const ScreenWrapper = ({ children }) => {
