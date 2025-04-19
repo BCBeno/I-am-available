@@ -1,19 +1,19 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
-import { profiles, chats } from "../data/fakeDatabase.json"; 
+import fakeDB, { getUser } from "../Fakedatabase/fakeDB";
 import { MaterialIcons } from "@expo/vector-icons";
 import { ScrollView } from "react-native-gesture-handler";
 import defaultAvatar from "../assets/default-avatar.png";
 
 export default function ProfileScreen({ route, navigation }) {
-    const { id } = route.params;
-    const profile = profiles.find((profile) => profile.id === id);
-    const chat = chats.find((chat) => chat.pId[1] === id);
+  const { hashtag } = route.params;
+  const profile = fakeDB.users.find((user) => user.hashtag === hashtag);
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.profileHeader}>
         <Image
-          source={{ uri: Image.resolveAssetSource(defaultAvatar).uri }} 
+          source={{ uri: profile.photo || Image.resolveAssetSource(defaultAvatar).uri }}
           style={styles.avatar}
         />
         <Text style={styles.profileName}>{profile.name}</Text>
@@ -24,86 +24,103 @@ export default function ProfileScreen({ route, navigation }) {
             const routes = navigation.getState().routes;
             const previousScreen = routes[routes.length - 2]?.name;
 
-            if (previousScreen !== "ChatDetails") 
-              navigation.navigate("ChatDetails", { chat });
-            else 
-              navigation.goBack();
+            if (previousScreen !== "ChatDetails")
+              navigation.navigate("ChatDetails", { chat })
+            else
+              navigation.goBack(); // Go back to the previous screen if it's already in the stack
           }}
         >
           <Text style={styles.messageButtonText}>Send message</Text>
         </TouchableOpacity>
       </View>
-        <View style={styles.separator} />
+      <View style={styles.separator} />
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Availability</Text>
-          {profile.availability.map((availability, index) => (
-            <View key={index} style={styles.availabilityItem}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialIcons name="access-time" size={20} color="#800080" />
-                <Text style={styles.availabilityTime}>{availability.time}</Text>
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <MaterialIcons name="calendar-today" size={20} color="#800080" />
-                  {availability.day ? (
-                    // Display days of the week (S M T W T F S)
-                    <View style={styles.daysContainer}>
-                      {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => {
-                        const fullDayNames = [
-                          "Sunday",
-                          "Monday",
-                          "Tuesday",
-                          "Wednesday",
-                          "Thursday",
-                          "Friday",
-                          "Saturday",
-                        ];
-
-                        const isActive = fullDayNames[index] === availability.day;
-
-                        return (
-                          <Text
-                            key={index}
-                            style={[styles.day, isActive && styles.activeDay]} 
-                          >
-                            {day}
-                          </Text>
-                        );
-                      })}
-                    </View>
-                  ) : (
-                    <Text style={styles.availabilityDate}>{availability.date}</Text>
-                  )}
-                </View>
-                <TouchableOpacity>
-                  <Text style={styles.detailsLink}>Details →</Text>
-                </TouchableOpacity>
-              </View>
+      <Text style={styles.sectionTitle}>Availability</Text>
+        {profile.availabilities.map((availability, index) => (
+          <View key={index} style={styles.availabilityItem}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialIcons name="access-time" size={20} color="#800080" />
+              <Text style={styles.availabilityTime}>{availability.time}</Text>
             </View>
-          ))}
-      </View>
-          <View style={styles.separator} />
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between", // Ensures the button is pushed to the right
+                alignItems: "center", // Aligns items vertically
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialIcons name="calendar-today" size={20} color="#800080" />
+                {availability.days ? (
+                  <View style={styles.daysContainer}>
+                    {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => {
+                      const fullDayNames = [
+                        "Sunday",
+                        "Monday",
+                        "Tuesday",
+                        "Wednesday",
+                        "Thursday",
+                        "Friday",
+                        "Saturday",
+                      ];
 
+                      const isActive = availability.days.includes(fullDayNames[index]);
+
+                      return (
+                        <Text
+                          key={index}
+                          style={[styles.day, isActive && styles.activeDay]}
+                        >
+                          {day}
+                        </Text>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <Text style={styles.availabilityDate}>{availability.date}</Text>
+                )}
+              </View>
+              <TouchableOpacity
+                style={{ marginLeft: "auto" }} // Pushes the button to the right
+                onPress={() =>
+                  navigation.navigate("StudentAvailabilityDetails", {
+                    user: profile,
+                    availabilityIndex: index,
+                  })
+                }
+              >
+                <Text style={styles.detailsLink}>Details →</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+      </View>
+      <View style={styles.separator} />
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Public Groups</Text>
-        
-            {profile.groups.map((group) => (
-                <View key={group.id} style={styles.groupItem}>
-                <Text style={styles.groupName}>{group.name}</Text>
-                <Text style={styles.groupId}>#{group.hashtag}</Text>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <MaterialIcons name="group" size={20} color="gray" />
-                    <Text style={styles.groupMembers}>
-                      {group.members} members
-                    </Text>
-                  </View>
-                  <TouchableOpacity>
-                    <Text style={styles.detailsLink}>Details →</Text>
-                  </TouchableOpacity>
-                </View>
-                </View>
-            ))}
+        {profile.groups.map((group) => (
+          <View key={group.id} style={styles.groupItem}>
+            <Text style={styles.groupName}>{group.name}</Text>
+            <Text style={styles.groupId}>#{group.hashtag}</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialIcons name="group" size={20} color="gray" />
+                <Text style={styles.groupMembers}>
+                  {group.members.length} members
+                </Text>
+              </View>
+              <TouchableOpacity>
+                <Text style={styles.detailsLink}>Details →</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
       </View>
     </ScrollView>
   );
@@ -182,7 +199,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "black",
     fontWeight: "bold",
-    marginLeft: 150,
+    marginLeft: 180, // Pushes the text to the right
   },
   groupItem: {
     marginBottom: 10,
@@ -224,5 +241,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#000",
     fontWeight: "bold",
+  },
+  totalMembers: {
+    fontSize: 14,
+    color: "gray",
+    marginBottom: 10,
+    textAlign: "center",
   },
 });

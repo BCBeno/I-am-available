@@ -3,20 +3,24 @@ import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert, I
 import { defaultStyles } from "../default-styles";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { chats } from "../data/fakeDatabase.json";
 import defaultAvatar from "../assets/default-avatar.png";
+import fakeDB from "../Fakedatabase/fakeDB";
 
-export default function ChatScreen() {
-  const [chatData, setChatData] = useState(chats);
+
+export default function ChatScreen({ route }) {
+  const { currentUser } = route.params; // Access currentUser from route.params
+  const [user, setUser] = useState(fakeDB.users.filter((u) => u.id === currentUser.id)[0]);
+  const [originalChatData, setOriginalChatData] = useState(user.chats); // Store the original chat data
+  const [chatData, setChatData] = useState(user.chats); // Store the filtered chat data
   const [searchQuery, setSearchQuery] = useState("");
   const navigation = useNavigation();
 
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim() === "") {
-      setChatData(chats);
+      setChatData(originalChatData); // Reset to the original chat data
     } else {
-      const filteredChats = chats.filter((chat) =>
+      const filteredChats = originalChatData.filter((chat) =>
         chat.participants[1].toLowerCase().includes(query.toLowerCase())
       );
       setChatData(filteredChats);
@@ -25,11 +29,11 @@ export default function ChatScreen() {
 
   const handleRemovePress = (chat) => {
     Alert.alert(
-      "Delete Chat", 
-      "Are you sure you want to delete this chat?", 
+      "Delete Chat",
+      "Are you sure you want to delete this chat?",
       [
         {
-          text: "Cancel", 
+          text: "Cancel",
           style: "cancel",
         },
         {
@@ -38,6 +42,7 @@ export default function ChatScreen() {
           onPress: () => {
             const updatedChatData = chatData.filter((item) => item.id !== chat.id);
             setChatData(updatedChatData);
+            setOriginalChatData(updatedChatData); // Update the original chat data as well
           },
         },
       ]
@@ -52,11 +57,12 @@ export default function ChatScreen() {
           chat.id === item.id ? { ...chat, isRead: 1 } : chat
         );
         setChatData(updatedChatData);
+        setOriginalChatData(updatedChatData); // Update the original chat data as well
         navigation.navigate("ChatDetails", { chat: item });
       }}
     >
       <View style={styles.chatInfo}>
-        <Image source={{ uri: Image.resolveAssetSource(defaultAvatar).uri }} style={styles.avatar}/>
+        <Image source={{ uri: Image.resolveAssetSource(defaultAvatar).uri }} style={styles.avatar} />
         <View>
           <Text
             style={[
@@ -64,7 +70,7 @@ export default function ChatScreen() {
               item.isRead === 0 && styles.unreadChatName,
             ]}
           >
-            {item.participants[1]}
+            {fakeDB.users.find((u) => u.hashtag === item.hashtag)?.name}
           </Text>
           <Text style={styles.chatHashtag}>#{item.hashtag}</Text>
         </View>
