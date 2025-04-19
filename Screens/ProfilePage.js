@@ -16,7 +16,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { getUser, updateUser } from "../Fakedatabase/fakeDB.js";
 import * as FileSystem from 'expo-file-system';
-
+import { isHashtagTaken } from '../Fakedatabase/fakeDB';
 
 
 const ProfileScreen = ({ user, setLoggedInUser }) => {
@@ -26,7 +26,8 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
   
   const [mockUser, setMockUser] = useState({
     ...userFromDB,
-    roles: userFromDB.roles || [], // Fallback to empty array
+    roles: userFromDB.roles || [],
+    availabilities: userFromDB.availabilities || [], 
   });
   const [tempUser, setTempUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -36,7 +37,6 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
   const [editedRoleName, setEditedRoleName] = useState('');
   const [newRoleModalVisible, setNewRoleModalVisible] = useState(false);
   const [newRoleData, setNewRoleData] = useState({ name: '', hashtag: '' });
-  
   
   const handlePickImage = async () => {
     if (!editMode) return;
@@ -94,7 +94,8 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
       if (!editMode) {
         setTempUser({
           ...mockUser,
-          profileImage: mockUser.photo, //  Make sure to bring in the base64 image
+          profileImage: mockUser.photo,
+          availabilities: mockUser.availabilities || [],
         });
       } else {
         setTempUser(null); // discard changes
@@ -102,44 +103,63 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
       setEditMode((prev) => !prev);
     };
 
-    const handleDeleteRole = (hashtagToDelete) => {
-      setTempUser((prev) => ({
-        ...prev,
-        roles: prev.roles.filter((r) => r.hashtag !== hashtagToDelete),
-      }));
-    };
+const handleDeleteRole = (hashtagToDelete) => {
+  setTempUser((prev) => ({
+    ...prev,
+    roles: prev.roles.filter((r) => r.hashtag !== hashtagToDelete),
+    availabilities: prev.availabilities
+      ? prev.availabilities.filter((a) => a.roleHashtag !== hashtagToDelete)
+      : []
+  }));
+};
+
     
-    const handleAddNewRole = () => {
-      const trimmedName = newRoleData.name.trim();
-      const trimmedHashtag = newRoleData.hashtag.trim();
-    
-      if (!trimmedName || !trimmedHashtag) {
-        Alert.alert('Error', 'Both role name and hashtag are required.');
-        return;
-      }
-    
-      const hashtagExists = tempUser.roles.some(
-        (r) => r.hashtag.toLowerCase() === trimmedHashtag.toLowerCase()
-      );
-    
-      if (hashtagExists) {
-        Alert.alert('Error', 'Hashtag must be unique.');
-        return;
-      }
-    
-      const newRole = {
-        name: trimmedName,
-        hashtag: trimmedHashtag,
-      };
-    
-      setTempUser((prev) => ({
-        ...prev,
-        roles: [...prev.roles, newRole],
-      }));
-    
-      setNewRoleData({ name: '', hashtag: '' });
-      setNewRoleModalVisible(false);
-    };
+const handleAddNewRole = () => {
+  const trimmedName = newRoleData.name.trim();
+  const trimmedHashtag = newRoleData.hashtag.trim();
+
+  if (!trimmedName || !trimmedHashtag) {
+    Alert.alert('Error', 'Both role name and hashtag are required.');
+    return;
+  }
+
+  // Check if hashtag is same as user's own hashtag
+  if (trimmedHashtag.toLowerCase() === mockUser.hashtag.toLowerCase()) {
+    Alert.alert('Error', 'Role hashtag cannot be the same as your user hashtag.');
+    return;
+  }
+
+  // Check if the hashtag is already used by one of this user's roles
+  const hashtagExistsInUser = tempUser.roles.some(
+    (r) => r.hashtag.toLowerCase() === trimmedHashtag.toLowerCase()
+  );
+
+  if (hashtagExistsInUser) {
+    Alert.alert('Error', 'This hashtag is already used by one of your roles.');
+    return;
+  }
+
+  // Check if hashtag is taken by another user
+  const hashtagTakenByOthers = isHashtagTaken(trimmedHashtag);
+  if (hashtagTakenByOthers) {
+    Alert.alert('Hashtag Taken', 'This hashtag is already used by another user. Please choose a different one.');
+    return;
+  }
+
+  const newRole = {
+    name: trimmedName,
+    hashtag: trimmedHashtag,
+  };
+
+  setTempUser((prev) => ({
+    ...prev,
+    roles: [...prev.roles, newRole],
+  }));
+
+  setNewRoleData({ name: '', hashtag: '' });
+  setNewRoleModalVisible(false);
+};
+
     
   
 
@@ -266,10 +286,10 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
     {editMode && (
   <View style={styles.footerButtons}>
 <TouchableOpacity
-  style={styles.plusButton}
+  style={styles.floatingButton}
   onPress={() => setNewRoleModalVisible(true)}
->
-  <Text style={styles.plusText}>+</Text>
+>   
+<Ionicons name="add" size={40} color="#fff"/>
 </TouchableOpacity>
 
 
@@ -289,7 +309,10 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
         updatedTempUser.photo = tempUser.profileImage;
       }
 
-      updateUser(mockUser.hashtag, updatedTempUser);
+      updateUser(mockUser.hashtag, {
+        ...updatedTempUser,
+        availabilities: updatedTempUser.availabilities || []//ALSO DELETES AVAILABILITIES ASOCIATED WITH THE HASHTAG
+      });
       setMockUser(updatedTempUser);
       setTempUser(null);
       setEditMode(false);
@@ -606,6 +629,7 @@ optionText: {
   },
 
   plusButton: {
+    
     backgroundColor: '#80004d',
     width: 60,
     height: 60,
@@ -616,7 +640,7 @@ optionText: {
     elevation: 6,
   },
   plusText: {
-    fontSize: 30,
+    fontSize: 50,
     color: '#fff',
   },
 confirmButton: {
@@ -685,7 +709,18 @@ roleText: {
   dropdownIcon: {
     marginLeft: 10,
   },
-  
+  floatingButton: {
+    position: 'absolute',
+    bottom: 90,
+    alignSelf: 'center',
+    width: 60,
+    height: 60,
+    backgroundColor: '#7C0152',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+  },
   
 });
 
