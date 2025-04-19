@@ -6,61 +6,79 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Keyboard,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import ScreenWrapper from './ScreenWrapper';
-import { isHashtagTaken } from '../Fakedatabase/fakeDB'; //  TODO: replace with API call to check if hashtag is taken
-import { Keyboard } from 'react-native';
+import { isHashtagTaken } from '../Fakedatabase/fakeDB';
 import uuid from 'react-native-uuid';
+import { DEV_MODE } from '../config';
 
 const SignUpBox = () => {
-
   const navigation = useNavigation();
   const [name, setName] = useState('');
   const [userHashtag, setUserHashtag] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const validatePassword = (pass) => {
+    const minLength = 8;
+    const hasNumber = /\d/.test(pass);
+    const hasUpper = /[A-Z]/.test(pass);
+    const hasLower = /[a-z]/.test(pass);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pass);
+    return (
+      pass.length >= minLength &&
+      hasNumber &&
+      hasUpper &&
+      hasLower &&
+      hasSpecial
+    );
+  };
+
   const handleSignUp = async () => {
     if (!name || !userHashtag || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill out all fields.');
       return;
     }
-  
+
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match.');
       return;
     }
-  
+
+    if (!DEV_MODE && !validatePassword(password)) {
+      Alert.alert(
+        'Weak Password',
+        'Password must be at least 8 characters long and include an uppercase letter, lowercase letter, number, and special character.'
+      );
+      return;
+    }
+
     const alreadyExists = isHashtagTaken(userHashtag);
     if (alreadyExists) {
       Alert.alert('Error', 'That hashtag is already taken.');
       return;
     }
-  
-    // Prepare user object with placeholder photo and empty roles
+
     const newUser = {
       id: uuid.v4(),
-      name: name,
+      name,
       hashtag: userHashtag,
-      password: password,
+      password,
       photo: '',
+      profiles: [],
       roles: [],
       groups: [],
       availabilities: [],
-      chats:[],
+      chats: [],
     };
-    
-    
-  
-    //Pass the full user object to the ProfilePicture screen
-    Keyboard.dismiss(); //  dismiss keyboard first
 
+    Keyboard.dismiss();
     setTimeout(() => {
-      navigation.navigate('ProfilePicture', newUser); //  delay avoids visual glitch
+      navigation.navigate('ProfilePicture', newUser);
     }, 100);
   };
-  
 
   return (
     <ScreenWrapper>
@@ -105,19 +123,18 @@ const SignUpBox = () => {
           </TouchableOpacity>
         </View>
 
-                  <TouchableOpacity
-            onPress={() => {
-              Keyboard.dismiss();
-              setTimeout(() => {
-                navigation.navigate('SignIn');
-              }, 100);
-            }}
-          >
-            <Text style={styles.bottomText}>
-              Already registered? <Text style={styles.signUpLink}>Login</Text>
-            </Text>
-          </TouchableOpacity>
-
+        <TouchableOpacity
+          onPress={() => {
+            Keyboard.dismiss();
+            setTimeout(() => {
+              navigation.navigate('SignIn');
+            }, 100);
+          }}
+        >
+          <Text style={styles.bottomText}>
+            Already registered? <Text style={styles.signUpLink}>Login</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
     </ScreenWrapper>
   );
