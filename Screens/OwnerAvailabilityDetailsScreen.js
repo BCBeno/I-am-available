@@ -11,7 +11,7 @@ import {
 import MapView, { Marker, Circle } from 'react-native-maps';
 import fakeDB, { getUser } from '../Fakedatabase/fakeDB';
 import CalendarIcon from '../assets/Calendar.png';
-
+import { Linking } from 'react-native';
 
 export default function OwnerAvailabilityDetailsScreen({ route, navigation }) {
   const { user: originalUser, availabilityIndex } = route.params;
@@ -22,7 +22,7 @@ export default function OwnerAvailabilityDetailsScreen({ route, navigation }) {
   const availability = user.availabilities?.[availabilityIndex];
   
   if (!availability) {
-    console.warn('❌ Invalid availability index or deleted entry:', availabilityIndex);
+    console.warn(' Invalid availability index or deleted entry:', availabilityIndex);
   
     if (Platform.OS === 'android') {
       ToastAndroid.show('This availability no longer exists.', ToastAndroid.SHORT);
@@ -40,7 +40,7 @@ export default function OwnerAvailabilityDetailsScreen({ route, navigation }) {
 
 
 if (!availability) {
-  console.warn('❌ Invalid availability index or deleted entry:', availabilityIndex);
+  console.warn(' Invalid availability index or deleted entry:', availabilityIndex);
 
   // Delay the navigation a bit so it doesn't conflict with render cycle
   setTimeout(() => {
@@ -98,7 +98,7 @@ if (!availability) {
           <View style={[styles.iconRow, { marginBottom: 20 }]}>
             <Image source={require('../assets/Calendar.png')} style={styles.calendarIcon} />
             <View style={[styles.readOnlyField, { flex: 1 }]}>
-              <Text style={{ fontSize: 16, color: '#000' }}>{availability.date.replace(/-/g, '/')}</Text>
+              <Text style={{ fontSize: 16, color: '#000' ,textAlign:'center'}}>{availability.date.replace(/-/g, '/')}</Text>
             </View>
           </View>
 )}
@@ -126,18 +126,23 @@ if (!availability) {
 
 
 
-        <Text style={styles.label}>Where?</Text>
-        <View style={styles.iconRow}>
-          <View style={styles.radioOption}>
-            <View style={[styles.radioCircle, availability.locationType === 'onSite' && styles.selected]} />
-            <Text style={{ color: availability.locationType === 'onSite' ? '#7C0152' : '#333', fontWeight: 'bold' }}>On Site</Text>
-          </View>
-          <View style={{ width: 20 }} />
-          <View style={styles.radioOption}>
-            <View style={[styles.radioCircle, availability.locationType === 'remote' && styles.selected]} />
-            <Text style={{ color: availability.locationType === 'remote' ? '#7C0152' : '#333', fontWeight: 'bold' }}>Remote</Text>
-          </View>
-        </View>
+<Text style={styles.label}>Where?</Text>
+<View style={styles.iconRow}>
+  <View style={{ flex: 1 }}>
+    <View style={styles.radioOption}>
+      <View style={[styles.radioCircle, availability.locationType === 'onSite' && styles.selected]} />
+      <Text style={{ color: availability.locationType === 'onSite' ? '#7C0152' : '#333', fontWeight: 'bold' }}>On Site</Text>
+    </View>
+  </View>
+
+  <View style={{ flex: 1, alignItems: 'flex-end' }}>
+    <View style={styles.radioOption}>
+      <View style={[styles.radioCircle, availability.locationType === 'remote' && styles.selected]} />
+      <Text style={{ color: availability.locationType === 'remote' ? '#7C0152' : '#333', fontWeight: 'bold' }}>Remote</Text>
+    </View>
+  </View>
+</View>
+
 
 
 
@@ -173,9 +178,28 @@ if (!availability) {
             <Text style={styles.readOnlyField}>{availability.radius.toString()}</Text>
           </>
         )}
-
-        <Text style={styles.label}>Complement</Text>
-        <Text style={styles.readOnlyField}>{availability.complement}</Text>
+            <Text style={styles.label}>Complement</Text>
+              <Text
+              style={styles.readOnlyField}
+              selectable
+              suppressHighlighting={true}
+            >
+              {availability.complement.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+                if (part.match(/https?:\/\/[^\s]+/)) {
+                  return (
+                    <Text
+                      key={index}
+                      style={{ color: '#7C0152', textDecorationLine: 'underline' }}
+                      onPress={() => Linking.openURL(part)}
+                    >
+                      {part}
+                    </Text>
+                  );
+                } else {
+                  return <Text key={index}>{part}</Text>;
+                }
+              })}
+            </Text>
 
         <TouchableOpacity style={styles.confirmButton} onPress={handleDelete}>
           <Text style={styles.confirmText}>Delete Availability</Text>
@@ -214,10 +238,10 @@ const styles = StyleSheet.create({
   timeInputWrapper: {
     flex: 0.48,
   },
-  iconRow: {
+  iconRow: {  
     flexDirection: 'row',
-    alignItems: 'center',       // vertical center
-    justifyContent: 'center',   // horizontal center 
+    alignItems: 'center',      
+    justifyContent: 'center',  
     marginBottom: 10,
   },
   dayButton: {

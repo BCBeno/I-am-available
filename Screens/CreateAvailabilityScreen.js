@@ -24,9 +24,9 @@ export default function CreateAvailabilityScreen({ navigation, route }) {
     const user = getUser(originalUser.hashtag); //  ensure fresh user data
     
 
-  const [location, setLocation] = useState({
-        latitude: 41.8068, 
-        longitude: -6.7574,
+    const [location, setLocation] = useState({
+      latitude: 41.79662,
+      longitude: -6.76844,
     });
 
 const roleOptions = user?.roles || [];
@@ -41,7 +41,7 @@ const [radius, setRadius] = useState('100');
   const [repeats, setRepeats] = useState(false);
   const [selectedDays, setSelectedDays] = useState([]);
   const [locationType, setLocationType] = useState('onSite');
-  const [complement, setComplement] = useState('Estig - Gabinet 72');
+  const [complement, setComplement] = useState('');
 const [showStartPicker, setShowStartPicker] = useState(false);
 const [showEndPicker, setShowEndPicker] = useState(false);
 
@@ -478,3 +478,44 @@ const styles = StyleSheet.create({
   
   
 });
+/*
+HOW THE DATA IS SAVED FOR THE DATABASE:
+{
+  roleHashtag: 'advisor-alex',         // selected role
+  group: 'dmgroup-A-2024-2',           // selected group
+  time: '14:00 - 16:00',               // selected time window
+  repeats: false,                      // repeating is off
+  date: '2025-04-22',                  // selected calendar date (ISO format)
+  locationType: 'onSite',              // or 'remote'
+  coordinates: {
+    latitude: 41.79662,
+    longitude: -6.76844
+  },
+  radius: 100,                         // radius in meters
+  complement: 'ESTIG - Gabinete 72'    // user-entered complement
+}
+
+
+OR
+
+{
+  roleHashtag: 'advisor-alex',
+  group: 'dmgroup-A-2024-2',
+  time: '14:00 - 16:00',
+  repeats: true,
+  days: ['Monday', 'Wednesday'],       // user-selected days
+  locationType: 'remote',
+  complement: 'https://zoom.us/j/xyz123'
+}
+
+
+
+In users:
+{
+  hashtag: 'advisor-alex',
+  name: 'Alex',
+  ...
+  availabilities: [  your newAvailability appears here  ]
+}
+
+*/

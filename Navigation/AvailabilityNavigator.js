@@ -7,7 +7,7 @@ import LocationDetailsScreen from '../Screens/LocationDetailsScreen';
 
 const Stack = createStackNavigator();
 
-export default function AvailabilityNavigator({ user, refreshTrigger }) { // ← ADD refreshTrigger
+export default function AvailabilityNavigator({ user, refreshTrigger }) { // ADD refreshTrigger
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* 1) Main list */}
@@ -17,7 +17,7 @@ export default function AvailabilityNavigator({ user, refreshTrigger }) { // ←
             user={user}
             navigation={navigation}
             route={route}
-            refreshTrigger={refreshTrigger} // ✅ now defined
+            refreshTrigger={refreshTrigger} //   defined
           />
         )}
       </Stack.Screen>
