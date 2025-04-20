@@ -11,6 +11,7 @@ import {
   Image
 } from "react-native";
 import defaultAvatar from "../assets/default-avatar.png";
+import fakeDB from "../Fakedatabase/fakeDB";
 
 export default function ChatDetailsScreen({ route, navigation }) {
   const { chat } = route.params;
@@ -55,10 +56,10 @@ export default function ChatDetailsScreen({ route, navigation }) {
         <View>
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate("Profile", {id: chat.pId[1]})
+              navigation.navigate("Profile", {hashtag: chat.hashtag})
             }
           >
-            <Text style={styles.chatName}>{chat.participants[1]}</Text>
+            <Text style={styles.chatName}>{fakeDB.users.find((u) => u.hashtag === chat.hashtag)?.name}</Text>
           </TouchableOpacity>
           <Text style={styles.chatHashtag}>#{chat.hashtag}</Text>
         </View>

@@ -41,7 +41,9 @@ function Tabs({ user, setLoggedInUser }) {
 
       <Tab.Screen name="Notifications">{() => <NotificationNavigator user={user} />}</Tab.Screen>
 
-      <Tab.Screen name="Chat" component={ChatNavigator} />
+      <Tab.Screen name="Chat">
+        {() => <ChatNavigator user={user} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
