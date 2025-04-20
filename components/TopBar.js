@@ -1,33 +1,29 @@
-import React from 'react';
-import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import {TextInput, View} from "react-native";
+import {colors} from "../colors";
+import {defaultStyles} from "../default-styles";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
-export default function TopBar({ profileImage }) {
-  const navigation = useNavigation();
-
-  return (
-    <View style={styles.topBar}>
-      <TouchableOpacity onPress={() => navigation.navigate('ProfileFlow')}>
-        <Image source={{ uri: profileImage }} style={styles.profilePic} />
-      </TouchableOpacity>
-    </View>
-  );
+export default function TopBar({style, setText}) {
+    return (
+        <View style={[{
+            backgroundColor: colors.primary,
+            paddingHorizontal: 20,
+            paddingBottom: 10,
+            flexDirection: "row",
+            justifyContent: "space-between",
+        }, style]}>
+            <View style={{
+                flexDirection: "row",
+                width: "85%",
+                alignItems: "center",
+                backgroundColor: colors.white,
+                borderRadius: 150,
+            }}>
+                <TextInput style={[defaultStyles.input, {paddingVertical: 4, width: "90%"}]}
+                           onChangeText={(text) => setText(text)}/>
+                <MaterialIcons name={'search'} size={24} color={colors.mediumGray}/>
+            </View>
+            <MaterialIcons name={'account-circle'} size={32} color={colors.white}/>
+        </View>
+    )
 }
-
-const styles = StyleSheet.create({
-  topBar: {
-    backgroundColor: '#7C0152',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingTop: 60,
-    paddingBottom: 10,
-  },
-  profilePic: {
-    top: -10,
-    width: 50,
-    height: 50,
-    borderRadius: 20,
-  },
-});
