@@ -108,7 +108,6 @@ export default function GroupDetailsScreen() {
                         defaultStyles.input,
                         defaultStyles.text,
                         {
-                            height: 100,
                             borderRadius: 20,
                             textAlignVertical: "top",
                             paddingVertical: 12,

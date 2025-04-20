@@ -8,9 +8,11 @@ import {useSelector} from "react-redux";
 export default function GroupListingCard({groupId}) {
     const navigation = useNavigation();
     const openGroupDetails = (group) => {
-        navigation.navigate("GroupDetails", {groupId: group.id})
+        navigation.navigate("Groups", {
+            screen: "GroupDetails",
+            params: {groupId: group.id}
+        });
     }
-
     const group = useSelector(state => state.groups).find(group => group.id === groupId);
 
     return (
