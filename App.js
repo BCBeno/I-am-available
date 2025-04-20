@@ -1,46 +1,66 @@
-import {NavigationContainer} from "@react-navigation/native";
-import {createBottomTabNavigator} from "@react-navigation/bottom-tabs";
-import GroupScreen from "./screens/group/GroupScreen";
-import EventsScreen from "./screens/EventsScreen";
-import NotificationsScreen from "./screens/NotificationsScreen";
-import ChatScreen from "./screens/ChatScreen";
-import BottomBar from "./components/BottomBar";
-import Store from "./redux/store";
-import {Provider} from "react-redux";
-import GroupStack from "./screens/group/GroupStack";
-import {useFonts} from "expo-font";
-import {
-    Poppins_200ExtraLight,
-    Poppins_300Light,
-    Poppins_400Regular,
-    Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold, Poppins_800ExtraBold
-} from "@expo-google-fonts/poppins";
+import { runAvailabilityCheck } from './LocationTask'; 
+import React, { useState, useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import AuthenticationFlow from './Navigation/AuthenticationFlow';
+import MainTabNavigator from './Navigation/MainTabNavigator';
+import { StatusBar } from 'expo-status-bar';
+import { AppState,Alert } from 'react-native';
+import { startBackgroundAvailabilityTask } from './LocationTask';
+import * as Location from 'expo-location'; 
+import * as TaskManager from 'expo-task-manager';
 
-const Tab = createBottomTabNavigator();
+let lastResume = 0;
+const TASK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
 
 export default function App() {
-    const [fontsLoaded] = useFonts({
-        Poppins_200ExtraLight,
-        Poppins_300Light,
-        Poppins_400Regular,
-        Poppins_500Medium,
-        Poppins_600SemiBold,
-        Poppins_700Bold,
-        Poppins_800ExtraBold
-    });
+  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
 
-    return (
-        <Provider store={Store}>
-            <NavigationContainer>
-                <Tab.Navigator screenOptions={{
-                    headerShown: false // Isso remove o header de todas as telas
-                }} tabBar={(props) => <BottomBar {...props} />}>
-                    <Tab.Screen name="Groups" component={GroupStack}/>
-                    <Tab.Screen name="Events" component={EventsScreen}/>
-                    <Tab.Screen name="Notifications" component={NotificationsScreen}/>
-                    <Tab.Screen name="Chat" component={ChatScreen}/>
-                </Tab.Navigator>
-            </NavigationContainer>
-        </Provider>
-    );
+  //  Re-check location permission when app comes back
+  useEffect(() => {
+    if (loggedInUser) {
+      setTimeout(async () => {
+        console.log('🔔 Sending test notification');
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '🚨 Test',
+            body: 'This is a test local notification',
+          },
+          trigger: null,
+        });
+      }, 3000); // 3 seconds after login
+    }
+  }, [loggedInUser]);
+
+  //  Initial permission check when user logs in
+  useEffect(() => {
+    if (!loggedInUser) return;
+
+    global.loggedInUserHashtag = loggedInUser.hashtag;
+    console.log('🔐 Logged in as:', loggedInUser.hashtag);
+
+    (async () => {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      const isGranted = status === 'granted';
+      setLocationPermissionGranted(isGranted);
+
+      if (isGranted) {
+        console.log('🛰️ Starting background availability task...');
+        startBackgroundAvailabilityTask();
+      } else {
+        console.log('🚫 Location permission not granted — task not started');
+      }
+    })();
+  }, [loggedInUser]);
+  return (
+    <NavigationContainer>
+      {!loggedInUser ? (
+        <AuthenticationFlow setLoggedInUser={setLoggedInUser} />
+      ) : (
+        <MainTabNavigator user={loggedInUser} setLoggedInUser={setLoggedInUser} />
+      )}
+      <StatusBar style="auto" />
+    </NavigationContainer>
+  );
 }
