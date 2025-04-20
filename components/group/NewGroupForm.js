@@ -37,6 +37,7 @@ export default function NewGroupForm({onClose, edit, group}) {
         }
 
         const newGroup = {
+            id: groups.length + 1,
             groupName: groupName,
             groupHashtag: groupHashtag,
             groupDescription: groupDescription,
@@ -46,7 +47,7 @@ export default function NewGroupForm({onClose, edit, group}) {
             ownerId: user.id,
         }
 
-        dispatch(addGroupToUser(newGroup));
+        dispatch(addGroupToUser(newGroup.id));
         dispatch(addGroup(newGroup));
 
         alert("Group created successfully");

@@ -1,5 +1,5 @@
 import {createSlice} from '@reduxjs/toolkit';
-import {initialGroups} from "../../data/initialGroups";
+import initialGroups from "../../data/initialGroups.json";
 
 const initialState = initialGroups;
 

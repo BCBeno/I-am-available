@@ -1,10 +1,10 @@
-import {useRoute} from "@react-navigation/native";
-import {StyleSheet, Text, View} from "react-native";
+import {useNavigation, useRoute} from "@react-navigation/native";
+import {FlatList, StyleSheet, Text, View} from "react-native";
 import {defaultStyles} from "../../default-styles";
 import BackButton from "../../components/BackButton";
 import {colors} from "../../colors";
 import Button from "../../components/Button";
-import {useSelector, useDispatch} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import NotificationButton from "../../components/group/NotificationButton";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import GroupUserListCard from "../../components/group/GroupUserListCard";
@@ -12,8 +12,11 @@ import {updateGroup} from "../../redux/slices/groupSlice";
 import {addGroupToUser, removeGroupFromUser} from "../../redux/slices/userSlice";
 import {useState} from "react";
 import JoinGroupModal from "../../components/group/JoinGroupModal";
+import InviteGroupModal from "../../components/group/InviteGroupModal";
 
 export default function GroupDetailsScreen() {
+
+    const navigation = useNavigation()
 
     const route = useRoute();
     const {groupId} = route.params;
@@ -31,6 +34,8 @@ export default function GroupDetailsScreen() {
     const [viewJoinGroupModal, setViewJoinGroupModal] = useState(false);
 
     const [receiveNotification, setReceiveNotification] = useState(group.groupMembers.find(member => member.id === user.id)?.notifications ?? false);
+
+    const [viewInviteModal, setViewInviteModal] = useState(false);
 
     const joinGroup = () => {
         if (!group.autoAdmission) {
@@ -88,6 +93,10 @@ export default function GroupDetailsScreen() {
                         groupId={group.id}
                     /> : null
             }
+            {
+                viewInviteModal ?
+                    <InviteGroupModal setModalVisible={setViewInviteModal} modalVisible={viewInviteModal}/> : null
+            }
             <BackButton/>
             <View style={styles.content} boxShadow={defaultStyles.dropShadow}>
                 <View>
@@ -107,10 +116,17 @@ export default function GroupDetailsScreen() {
                         }
                     ]}
                 >{group.description}</Text>
-                <Button text={isOwner ? "Make an Anouncement" : "Owner Details"}/>
+                {
+                    isOwner ?
+                        <Button text={"Make an Announcement"} onClick={() => {
+                            navigation.navigate("MakeAnouncement", {groupId: group.id})
+                        }}/> :
+                        <Button text={"Owner Details"}
+                        />
+                }
                 {isOwner ?
                     <Button style={{backgroundColor: colors.tertiary}}
-                            text={"Invite"}/> :
+                            text={"Invite"} onClick={() => setViewInviteModal(true)}/> :
                     <View style={{flexDirection: "row", flex: 0, gap: "3%"}}>
                         {
                             !isMember ?
@@ -155,11 +171,15 @@ export default function GroupDetailsScreen() {
                             overflow: "hidden",
                             boxShadow: "inset 0px 1px 3px rgba(0, 0, 0, 0.5)",
                         }}>
-                        {group.groupMembers.map((member, index) => (
-                            <View key={index} style={{flexDirection: "row", alignItems: "center"}}>
-                                <GroupUserListCard member={member} isOwner={isOwner} groupId={group.id}/>
-                            </View>
-                        ))}
+                        <FlatList
+                            data={group.groupMembers}
+                            keyExtractor={(item, index) => index.toString()}
+                            renderItem={({item}) => (
+                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                    <GroupUserListCard member={item} isOwner={isOwner} groupId={group.id}/>
+                                </View>
+                            )}
+                        />
                     </View>
                 </View>
             </View>

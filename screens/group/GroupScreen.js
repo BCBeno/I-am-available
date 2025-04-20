@@ -1,4 +1,4 @@
-import {ScrollView, View} from "react-native";
+import {FlatList, View} from "react-native";
 import {useEffect, useState} from "react";
 import GroupListingCard from "../../components/group/GroupListingCard";
 import NewGroupModal from "../../components/group/NewGroupModal";
@@ -19,7 +19,6 @@ export default function GroupScreen() {
     useEffect(() => {
         if (searchText !== "") {
             setFilteredGroups((groups.filter((group) => (group.groupHashtag.includes(searchText) || group.groupName.includes(searchText))
-                // && !user.groupIdList.includes(group.id)
             )));
         } else {
             setFilteredGroups(groups.filter((group) => user.groupIdList.includes(group.id)));
@@ -30,13 +29,15 @@ export default function GroupScreen() {
         <>
             <TopBar style={{paddingTop: "15%"}} setText={setSearchText}/>
             <View style={[defaultStyles.container, {paddingTop: "5%"}]}>
-                <ScrollView contentContainerStyle={styles.groupList} showsVerticalScrollIndicator={false}>
-                    {
-                        filteredGroups.map((group, index) => (
-                            <GroupListingCard key={index} groupId={group.id}/>
-                        ))
-                    }
-                </ScrollView>
+                <FlatList
+                    data={filteredGroups}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({item}) => (
+                        <GroupListingCard key={item.id} groupId={item.id}/>
+                    )}
+                    contentContainerStyle={styles.groupList}
+                    showsVerticalScrollIndicator={false}
+                />
                 <NewGroupModal
                     modalVisible={newGroupModalVisible}
                     setModalVisible={setNewGroupModalVisible}
