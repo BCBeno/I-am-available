@@ -86,7 +86,8 @@ export default function AvailabilityScreen({user, navigation, route, refreshTrig
 
     return (
         <>
-            <TopBar profileImage={user?.photo}/>
+            <TopBar style={{paddingTop: "15%"}} setText={() => {
+            }}/>
             <View style={styles.container}>
                 <FlatList
                     data={availabilities} // ✅ was `availability` (undefined)

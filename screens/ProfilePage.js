@@ -17,6 +17,8 @@ import * as ImagePicker from 'expo-image-picker';
 import {getUser, updateUser} from "../data/fakeDB.js";
 import * as FileSystem from 'expo-file-system';
 import {isHashtagTaken} from '../data/fakeDB';
+import {defaultStyles} from "../default-styles";
+import BackButton from "../components/BackButton";
 
 
 const ProfileScreen = ({user, setLoggedInUser}) => {
@@ -160,16 +162,10 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
 
 
     return (
-        <View style={styles.pageWrapper}>
+        <View style={defaultStyles.container}>
+            <BackButton/>
             <ScrollView contentContainerStyle={styles.container}>
                 {/* Back Button */}
-                <View style={styles.backContainer}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={20} color="#000"/>
-                        <Text style={styles.backText}>Back</Text>
-                    </TouchableOpacity>
-                </View>
-
                 {/* Profile Card */}
                 <View style={styles.profileCard}>
 
@@ -522,15 +518,10 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
 
-    pageWrapper: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-    },
-
     container: {
         padding: 20,
         paddingBottom: 100,
-        backgroundColor: '#f5f5f5',
+        justifyContent: 'center',
     },
     backContainer: {
         marginBottom: 10,
@@ -636,8 +627,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#80004d',
         paddingVertical: 14,
         borderRadius: 30,
-        width: '90%',
-        alignSelf: 'center',
+        width: '100%',
         alignItems: 'center',
         marginTop: 10,
     },

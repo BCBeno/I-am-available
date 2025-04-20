@@ -1,9 +1,12 @@
-import {TextInput, View} from "react-native";
+import {TextInput, TouchableOpacity, View} from "react-native";
 import {colors} from "../colors";
 import {defaultStyles} from "../default-styles";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import {useNavigation} from "@react-navigation/native";
 
 export default function TopBar({style, setText}) {
+    const navigation = useNavigation();
+
     return (
         <View style={[{
             backgroundColor: colors.primary,
@@ -23,7 +26,9 @@ export default function TopBar({style, setText}) {
                            onChangeText={(text) => setText(text)}/>
                 <MaterialIcons name={'search'} size={24} color={colors.mediumGray}/>
             </View>
-            <MaterialIcons name={'account-circle'} size={32} color={colors.white}/>
+            <TouchableOpacity onPress={() => navigation.navigate('ProfileFlow')}>
+                <MaterialIcons name={'account-circle'} size={32} color={colors.white}/>
+            </TouchableOpacity>
         </View>
     )
 }
