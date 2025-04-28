@@ -25,7 +25,7 @@ export default function StudentAvailabilityDetailsScreen({route, navigation}) {
     }, [navigation]);
 
     if (!availability) {
-        console.warn('❌ Invalid availability index or deleted entry:', availabilityIndex);
+        console.warn(' Invalid availability index or deleted entry:', availabilityIndex);
 
         if (Platform.OS === 'android') {
             ToastAndroid.show('This availability no longer exists.', ToastAndroid.SHORT);

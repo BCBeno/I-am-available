@@ -27,7 +27,7 @@ export default function ProfileScreen({route, navigation}) {
                         if (previousScreen !== "ChatDetails")
                             navigation.navigate("ChatDetails", {chat})
                         else
-                            navigation.goBack(); // Go back to the previous screen if it's already in the stack
+                            navigation.goBack(); 
                     }}
                 >
                     <Text style={styles.messageButtonText}>Send message</Text>
@@ -45,8 +45,8 @@ export default function ProfileScreen({route, navigation}) {
                         <View
                             style={{
                                 flexDirection: "row",
-                                justifyContent: "space-between", // Ensures the button is pushed to the right
-                                alignItems: "center", // Aligns items vertically
+                                justifyContent: "space-between",
+                                alignItems: "center", 
                             }}
                         >
                             <View style={{flexDirection: "row", alignItems: "center"}}>
