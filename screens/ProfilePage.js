@@ -604,9 +604,13 @@ const styles = StyleSheet.create({
     footerButtons: {
         position: 'absolute',
         bottom: 20,
-        width: '100%',
+        left: 0,
+        right: 0,
         alignItems: 'center',
-    },
+        justifyContent: 'center',
+        gap: 10, 
+      },
+      
 
     plusButton: {
 
