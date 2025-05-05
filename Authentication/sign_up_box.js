@@ -66,7 +66,7 @@ const SignUpBox = () => {
         const hashedPassword = SHA256(password).toString();
 
         const newUser = {
-            id: uuid.v4(),
+            jwttoken:'',
             name,
             hashtag: userHashtag,
             password: hashedPassword,
