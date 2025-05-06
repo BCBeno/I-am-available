@@ -76,6 +76,7 @@ const SignUpBox = () => {
             groups: [],
             availabilities: [],
             chats: [],
+            notifications: [],
         };
 
 
