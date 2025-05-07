@@ -6,7 +6,6 @@ import ProfileScreen from "../screens/ProfileScreen";
 import StudentAvailabilityDetailsScreen from "../screens/StudentAvailabilityDetailsScreen";
 import LocationDetailsScreen from '../screens/LocationDetailsScreen';
 
-
 const Stack = createStackNavigator();
 
 const ChatNavigator = ({user}) => {
@@ -17,7 +16,11 @@ const ChatNavigator = ({user}) => {
                 component={ChatScreen}
                 initialParams={{currentUser: user}} // Pass user as initialParams
             />
-            <Stack.Screen name="ChatDetails" component={ChatDetailsScreen}/>
+            <Stack.Screen
+                name="ChatDetails"
+                component={ChatDetailsScreen}
+                initialParams={{currentUser: user}} // Pass user as initialParams
+            />
             <Stack.Screen name="Profile" component={ProfileScreen}/>
             <Stack.Screen
                 name="StudentAvailabilityDetails"
@@ -28,7 +31,6 @@ const ChatNavigator = ({user}) => {
                 component={LocationDetailsScreen}
             />
         </Stack.Navigator>
-
     );
 };
 

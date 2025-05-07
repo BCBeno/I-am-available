@@ -1,56 +1,114 @@
-import React from "react";
-import {View, Text, TouchableOpacity, StyleSheet, Image} from "react-native";
-import fakeDB, {getUser} from "../data/fakeDB";
-import {MaterialIcons} from "@expo/vector-icons";
-import {ScrollView} from "react-native-gesture-handler";
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import { ScrollView } from "react-native-gesture-handler";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../firebaseconfig";
 import defaultAvatar from "../assets/default-avatar.png";
 
-export default function ProfileScreen({route, navigation}) {
-    const {hashtag} = route.params;
-    const profile = fakeDB.users.find((user) => user.hashtag === hashtag);
+export default function ProfileScreen({ route, navigation }) {
+    const { hashtag, currentUser } = route.params; // Retrieve currentUser from route.params
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            try {
+                const userRef = doc(db, "users", hashtag);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    const availabilitiesRef = collection(db, "availabilities");
+                    const availabilitiesQuery = query(
+                        availabilitiesRef,
+                        where("userHashtag", "==", hashtag)
+                    );
+                    const availabilitiesSnap = await getDocs(availabilitiesQuery);
+                    const availabilities = availabilitiesSnap.docs.map((doc) => doc.data());
+                    setProfile({ ...userData, availabilities });
+                } else {
+                    console.error("No such user document!");
+                }
+            } catch (error) {
+                console.error("Error fetching user document:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserProfile();
+    }, [hashtag]);
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#800080" />
+            </View>
+        );
+    }
+
+    if (!profile) {
+        return (
+            <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>User not found.</Text>
+            </View>
+        );
+    }
 
     return (
         <ScrollView style={styles.container}>
             <View style={styles.profileHeader}>
                 <Image
-                    source={{uri: profile.photo || Image.resolveAssetSource(defaultAvatar).uri}}
+                    source={{ uri: profile.photo || Image.resolveAssetSource(defaultAvatar).uri }}
                     style={styles.avatar}
                 />
                 <Text style={styles.profileName}>{profile.name}</Text>
-                <Text style={styles.profileHashtag}>#{profile.hashtag}</Text>
+                <Text style={styles.profileHashtag}>#{hashtag}</Text>
                 <TouchableOpacity
                     style={styles.messageButton}
                     onPress={() => {
                         const routes = navigation.getState().routes;
                         const previousScreen = routes[routes.length - 2]?.name;
 
-                        if (previousScreen !== "ChatDetails")
-                            navigation.navigate("ChatDetails", {chat})
-                        else
-                            navigation.goBack(); 
+                        if (previousScreen !== "ChatDetails") {
+                            const chatId = [currentUser.hashtag, profile.hashtag].sort().join("_");
+
+                            navigation.navigate("ChatDetails", {
+                                chat: {
+                                    id: chatId,
+                                    otherParticipantHashtag: profile.hashtag,
+                                    otherParticipantName: profile.name,
+                                },
+                                currentUser: {
+                                    hashtag: currentUser.hashtag,
+                                },
+                            });
+                        } else {
+                            navigation.goBack();
+                        }
                     }}
                 >
                     <Text style={styles.messageButtonText}>Send message</Text>
                 </TouchableOpacity>
             </View>
-            <View style={styles.separator}/>
+            <View style={styles.separator} />
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Availability</Text>
-                {profile.availabilities.map((availability, index) => (
+                {Array.isArray(profile.availabilities) && profile.availabilities.map((availability, index) => (
                     <View key={index} style={styles.availabilityItem}>
-                        <View style={{flexDirection: "row", alignItems: "center"}}>
-                            <MaterialIcons name="access-time" size={20} color="#800080"/>
+                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                            <MaterialIcons name="access-time" size={20} color="#800080" />
                             <Text style={styles.availabilityTime}>{availability.time}</Text>
                         </View>
                         <View
                             style={{
                                 flexDirection: "row",
                                 justifyContent: "space-between",
-                                alignItems: "center", 
+                                alignItems: "center",
                             }}
                         >
-                            <View style={{flexDirection: "row", alignItems: "center"}}>
-                                <MaterialIcons name="calendar-today" size={20} color="#800080"/>
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                <MaterialIcons name="calendar-today" size={20} color="#800080" />
                                 {availability.days ? (
                                     <View style={styles.daysContainer}>
                                         {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => {
@@ -81,7 +139,7 @@ export default function ProfileScreen({route, navigation}) {
                                 )}
                             </View>
                             <TouchableOpacity
-                                style={{marginLeft: "auto"}} // Pushes the button to the right
+                                style={{ marginLeft: "auto" }}
                                 onPress={() =>
                                     navigation.navigate("StudentAvailabilityDetails", {
                                         user: profile,
@@ -95,10 +153,10 @@ export default function ProfileScreen({route, navigation}) {
                     </View>
                 ))}
             </View>
-            <View style={styles.separator}/>
+            <View style={styles.separator} />
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Public Groups</Text>
-                {profile.groups.map((group) => (
+                {Array.isArray(profile.groups) && profile.groups.map((group) => (
                     <View key={group.id} style={styles.groupItem}>
                         <Text style={styles.groupName}>{group.name}</Text>
                         <Text style={styles.groupId}>#{group.hashtag}</Text>
@@ -109,8 +167,8 @@ export default function ProfileScreen({route, navigation}) {
                                 alignItems: "center",
                             }}
                         >
-                            <View style={{flexDirection: "row", alignItems: "center"}}>
-                                <MaterialIcons name="group" size={20} color="gray"/>
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                <MaterialIcons name="group" size={20} color="gray" />
                                 <Text style={styles.groupMembers}>
                                     {group.members.length} members
                                 </Text>
@@ -199,7 +257,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "black",
         fontWeight: "bold",
-        marginLeft: 180, // Pushes the text to the right
+        marginLeft: 180,
     },
     groupItem: {
         marginBottom: 10,
@@ -247,5 +305,19 @@ const styles = StyleSheet.create({
         color: "gray",
         marginBottom: 10,
         textAlign: "center",
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    errorText: {
+        fontSize: 16,
+        color: "red",
     },
 });
