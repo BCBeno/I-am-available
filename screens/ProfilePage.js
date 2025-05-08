@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -9,28 +9,21 @@ import {
     Alert,
     TextInput
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import defaultPhoto from '../assets/defaulticon.png'
+import { useNavigation } from '@react-navigation/native';
+import defaultPhoto from '../assets/defaulticon.png';
 import editIcon from '../assets/edit-button-icon.png';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
-import {getUser, updateUser} from "../data/fakeDB.js";
 import * as FileSystem from 'expo-file-system';
-import {isHashtagTaken} from '../data/fakeDB';
-import {defaultStyles} from "../default-styles";
-import BackButton from "../components/BackButton";
+import { defaultStyles } from '../default-styles';
+import BackButton from '../components/BackButton';
+import { loadCompleteUserData } from '../data/userDataLoader';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebaseconfig';
 
-
-const ProfileScreen = ({user, setLoggedInUser}) => {
+const ProfileScreen = () => {
     const navigation = useNavigation();
-    const userFromDB = getUser(user.hashtag);
-
-
-    const [mockUser, setMockUser] = useState({
-        ...userFromDB,
-        roles: userFromDB.roles || [],
-        availabilities: userFromDB.availabilities || [],
-    });
+    const [mockUser, setMockUser] = useState(null);
     const [tempUser, setTempUser] = useState(null);
     const [editMode, setEditMode] = useState(false);
     const [showOptions, setShowOptions] = useState(false);
@@ -38,7 +31,33 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
     const [editingRole, setEditingRole] = useState(null);
     const [editedRoleName, setEditedRoleName] = useState('');
     const [newRoleModalVisible, setNewRoleModalVisible] = useState(false);
-    const [newRoleData, setNewRoleData] = useState({name: '', hashtag: ''});
+    const [newRoleData, setNewRoleData] = useState({ name: '', hashtag: '' });
+
+    useEffect(() => {
+        const fetchUser = async () => {
+          try {
+            const data = await loadCompleteUserData(global.loggedInUserHashtag);
+            setMockUser(data); 
+          } catch (err) {
+            console.error("❌ Failed to load user in ProfileScreen:", err);
+          }
+        };
+      
+        fetchUser(); // ✅ Don't forget to call it
+      }, []);
+    const saveProfileChanges = async (updatedUser) => {
+        try {
+            const userRef = doc(db, 'users', updatedUser.hashtag);
+            await updateDoc(userRef, {
+                roles: updatedUser.roles,
+                photo: updatedUser.photo || '',
+            });
+            console.log('✅ Profile successfully updated in Firestore.');
+        } catch (error) {
+            console.error('❌ Failed to update profile:', error);
+            Alert.alert('Error', 'Failed to save your profile changes.');
+        }
+    };
 
     const handlePickImage = async () => {
         if (!editMode) return;
@@ -70,7 +89,6 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
         }
     };
 
-
     const confirmEditRole = (hashtag) => {
         if (!editedRoleName.trim()) {
             Alert.alert('Error', 'Role name cannot be empty.');
@@ -80,7 +98,7 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
         setTempUser((prev) => ({
             ...prev,
             roles: prev.roles.map((r) =>
-                r.hashtag === hashtag ? {...r, name: editedRoleName.trim()} : r
+                r.hashtag === hashtag ? { ...r, name: editedRoleName.trim() } : r
             ),
         }));
 
@@ -88,7 +106,6 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
         setEditedRoleName('');
         setActiveDropdownIndex(null);
     };
-
 
     const handleEditProfile = () => {
         if (!editMode) {
@@ -109,10 +126,9 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
             roles: prev.roles.filter((r) => r.hashtag !== hashtagToDelete),
             availabilities: prev.availabilities
                 ? prev.availabilities.filter((a) => a.roleHashtag !== hashtagToDelete)
-                : []
+                : [],
         }));
     };
-
 
     const handleAddNewRole = () => {
         const trimmedName = newRoleData.name.trim();
@@ -123,26 +139,12 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
             return;
         }
 
-        // Check if hashtag is same as user's own hashtag
-        if (trimmedHashtag.toLowerCase() === mockUser.hashtag.toLowerCase()) {
-            Alert.alert('Error', 'Role hashtag cannot be the same as your user hashtag.');
-            return;
-        }
-
-        // Check if the hashtag is already used by one of this user's roles
         const hashtagExistsInUser = tempUser.roles.some(
             (r) => r.hashtag.toLowerCase() === trimmedHashtag.toLowerCase()
         );
 
         if (hashtagExistsInUser) {
             Alert.alert('Error', 'This hashtag is already used by one of your roles.');
-            return;
-        }
-
-        // Check if hashtag is taken by another user
-        const hashtagTakenByOthers = isHashtagTaken(trimmedHashtag);
-        if (hashtagTakenByOthers) {
-            Alert.alert('Hashtag Taken', 'This hashtag is already used by another user. Please choose a different one.');
             return;
         }
 
@@ -156,11 +158,18 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
             roles: [...prev.roles, newRole],
         }));
 
-        setNewRoleData({name: '', hashtag: ''});
+        setNewRoleData({ name: '', hashtag: '' });
         setNewRoleModalVisible(false);
     };
 
-
+    if (!mockUser) {
+        return (
+            <View style={defaultStyles.container}>
+                <Text>Loading your profile...</Text>
+            </View>
+        );
+    }
+    
     return (
         <View style={defaultStyles.container}>
             <BackButton/>
@@ -294,10 +303,9 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
                             if (tempUser?.profileImage) {
                                 updatedTempUser.photo = tempUser.profileImage;
                             }
-
-                            updateUser(mockUser.hashtag, {
+                            saveProfileChanges({
                                 ...updatedTempUser,
-                                availabilities: updatedTempUser.availabilities || []//ALSO DELETES AVAILABILITIES ASOCIATED WITH THE HASHTAG
+                                availabilities: updatedTempUser.availabilities || [],
                             });
                             setMockUser(updatedTempUser);
                             setTempUser(null);
@@ -305,8 +313,7 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
                             setEditingRole(null);
                             setEditedRoleName('');
 
-                            // Clearly set global user state:
-                            setLoggedInUser(updatedTempUser);
+    
                         }}
                     >
                         <Text style={styles.confirmText}>Confirm</Text>

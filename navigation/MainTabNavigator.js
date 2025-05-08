@@ -6,8 +6,6 @@ import ChatNavigator from './/ChatNavigator';
 import BottomBar from '../components/BottomBar';
 import ProfileFlow from './/ProfileFlow';
 import AvailabilityNavigator from './AvailabilityNavigator';
-import {getUser} from '../data/fakeDB';
-import GroupScreen from "../screens/group/GroupScreen";
 import GroupStack from "../screens/group/GroupStack";
 
 const Tab = createBottomTabNavigator();
@@ -26,9 +24,7 @@ function Tabs({user, setLoggedInUser}) {
                     setLoggedInUser={setLoggedInUser}
                     onTabChange={(name) => {
                         if (name === 'Availability') {
-                            const fresh = getUser(user.hashtag);
-                            setLoggedInUser(fresh);
-                            setRefreshTrigger((prev) => prev + 1);
+                            setRefreshTrigger((prev) => prev + 1); 
                         }
                     }}
                 />
@@ -56,8 +52,14 @@ export default function MainTabNavigator({user, setLoggedInUser}) {
                 {() => <Tabs user={user} setLoggedInUser={setLoggedInUser}/>}
             </RootStack.Screen>
             <RootStack.Screen name="ProfileFlow">
-                {() => <ProfileFlow user={user} setLoggedInUser={setLoggedInUser}/>}
-            </RootStack.Screen>
+                {({ route }) => (
+                    <ProfileFlow
+                    route={route}               
+                    user={user}
+                    setLoggedInUser={setLoggedInUser}
+                    />
+                )}
+                </RootStack.Screen>
         </RootStack.Navigator>
     );
 }

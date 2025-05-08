@@ -428,9 +428,10 @@ users:
     {
       id: "string",               // Unique chat ID
       participants: ["hashtag1", "hashtag2"],
-      pId: [number, number],      // Internal profile/user ids
-      hashtag: "string",          // Hashtag of the person this user is chatting with
-      isRead: number,             // 0 or 1 to indicate if user has read the last message
+      isRead:{
+      hashtag1:bool,
+      hashtag2:bool
+      },             // 0 or 1 to indicate if user has read the last message
       messages: [
         {
           sender: "string",       // Hashtag of sender
