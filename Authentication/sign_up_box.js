@@ -11,9 +11,9 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import ScreenWrapper from './ScreenWrapper';
 import {isHashtagTaken} from '../data/fakeDB';
-import uuid from 'react-native-uuid';
 import {DEV_MODE} from '../config';
-import SHA256 from 'crypto-js/sha256';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebaseconfig'; 
 
 
 const SignUpBox = () => {
@@ -22,6 +22,7 @@ const SignUpBox = () => {
     const [userHashtag, setUserHashtag] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [email, setEmail] = useState('');
 
     const validatePassword = (pass) => {
         const minLength = 8;
@@ -39,11 +40,10 @@ const SignUpBox = () => {
     };
 
     const handleSignUp = async () => {
-        if (!name || !userHashtag || !password || !confirmPassword) {
-            Alert.alert('Error', 'Please fill out all fields.');
-            return;
-        }
-
+      if (!name || !email || !userHashtag || !password || !confirmPassword) {
+        Alert.alert('Error', 'Please fill out all fields.');
+        return;
+    }
         if (password !== confirmPassword) {
             Alert.alert('Error', 'Passwords do not match.');
             return;
@@ -63,20 +63,14 @@ const SignUpBox = () => {
             return;
         }
 
-        const hashedPassword = SHA256(password).toString();
-
         const newUser = {
-            jwttoken:'',
             name,
+            email,
             hashtag: userHashtag,
-            password: hashedPassword,
+            password,
             photo: '',
-            profiles: [],
             roles: [],
             groups: [],
-            availabilities: [],
-            chats: [],
-            notifications: []
         };
 
 
@@ -97,7 +91,15 @@ const SignUpBox = () => {
                         value={name}
                         onChangeText={setName}
                     />
-
+                      <Text style={styles.label}>Email</Text>
+                      <TextInput
+                          style={styles.input}
+                          placeholder="Enter Email"
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          value={email}
+                          onChangeText={setEmail}
+                      />
                     <Text style={styles.label}>User Hashtag</Text>
                     <TextInput
                         style={styles.input}

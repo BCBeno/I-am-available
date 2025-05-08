@@ -16,24 +16,23 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import ScreenWrapper from './ScreenWrapper';
 import defaultphoto from '../assets/defaulticon.png';
-import {addUser} from '../data/fakeDB';
-import * as FileSystem from 'expo-file-system';
-
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 const ProfilePictureUploadBox = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const user = route.params || {};
+    const user = route.params || {}; // Get user data from navigation params
 
     const [photoBase64, setPhotoBase64] = useState(null);
 
-    // Defensive check
+    // Log the received user data when the component mounts
     useEffect(() => {
-        if (!user?.name || !user?.hashtag || !user?.password) {
+        console.log("📸 ProfilePictureUploadBox mounted. Received user data:", user);
+        if (!user?.name || !user?.hashtag || !user?.password || !user?.email) { // Added check for email
             Alert.alert('Error', 'User data is incomplete. Please sign up again.');
             navigation.navigate('SignUp');
         }
-    }, []);
+    }, [user, navigation]); // Added dependencies
 
     const handleFileChange = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -47,29 +46,60 @@ const ProfilePictureUploadBox = () => {
         if (!result.canceled && result.assets[0]?.base64) {
             const base64String = result.assets[0].base64;
             setPhotoBase64(base64String);
+            console.log("🖼️ Photo selected and base64 set."); // Log when photo is selected
+        } else {
+             console.log("🖼️ Photo selection cancelled or failed."); // Log if selection is cancelled or fails
         }
     };
 
-    const handleSignUp = () => {
+    const handleSignUp = async () => {
+        console.log("👆 'Sign Up' button pressed."); // Log when button is pressed
+
         if (!photoBase64) {
             Alert.alert('Wait!', 'Please select a photo before signing up.');
+            console.log("🛑 Photo not selected, returning early."); // Log if returning early
             return;
         }
+
+        console.log("✅ Passed photo check, attempting Firebase signup..."); // Log before Firebase calls
 
         const finalUser = {
             ...user,
             photo: `data:image/jpeg;base64,${photoBase64}`,
         };
 
+        // Log the data we are about to send to Firebase Auth
+        console.log("📧 Email to use:", finalUser.email);
+        console.log("🔑 Password to use:", finalUser.password ? "********" : "No password provided"); // Mask password
 
-        addUser(finalUser);
-        console.log('✅ Final user saved:', {
-            ...finalUser,
-            photo: `base64(${photoBase64.slice(0, 30)}...)`,
-        });
+        const auth = getAuth();
 
-        Alert.alert('Success', 'User registered successfully!');
-        navigation.navigate('SignIn');
+        try {
+            console.log("✅ Successfully entered the try block."); // <-- Add this line!
+            console.log("➡️ Attempting createUserWithEmailAndPassword...");
+
+            console.log("➡️ Attempting createUserWithEmailAndPassword...");
+            const userCredential = await createUserWithEmailAndPassword(
+                auth,
+                finalUser.email, // Ensure email is here
+                finalUser.password // Ensure password is here
+            );
+             console.log("✅ createUserWithEmailAndPassword succeeded.");
+
+            console.log("➡️ Attempting updateProfile...");
+            await updateProfile(userCredential.user, {
+                displayName: finalUser.name, // Ensure name is here
+                photoURL: finalUser.photo, // Ensure photo is here
+            });
+            console.log("✅ updateProfile succeeded.");
+
+            console.log('🎉 Firebase user created successfully:', userCredential.user.email);
+            Alert.alert('Success', 'User registered successfully!');
+            navigation.navigate('SignIn');
+        } catch (error) {
+            console.error('❌ Firebase registration error:', error); // This is your original catch
+            Alert.alert('Registration failed', error.message);
+        }
     };
 
     return (
