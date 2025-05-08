@@ -16,7 +16,11 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import ScreenWrapper from './ScreenWrapper';
 import defaultphoto from '../assets/defaulticon.png';
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import {
+    createUserWithEmailAndPassword,
+    updateProfile
+  } from 'firebase/auth';
+import { auth } from '../firebaseconfig';
 
 const ProfilePictureUploadBox = () => {
     const navigation = useNavigation();
@@ -72,34 +76,46 @@ const ProfilePictureUploadBox = () => {
         console.log("📧 Email to use:", finalUser.email);
         console.log("🔑 Password to use:", finalUser.password ? "********" : "No password provided"); // Mask password
 
-        const auth = getAuth();
+
 
         try {
-            console.log("✅ Successfully entered the try block."); // <-- Add this line!
+            console.log("✅ Successfully entered the try block.");
             console.log("➡️ Attempting createUserWithEmailAndPassword...");
-
-            console.log("➡️ Attempting createUserWithEmailAndPassword...");
+          
             const userCredential = await createUserWithEmailAndPassword(
-                auth,
-                finalUser.email, // Ensure email is here
-                finalUser.password // Ensure password is here
+              auth,
+              finalUser.email,
+              finalUser.password
             );
-             console.log("✅ createUserWithEmailAndPassword succeeded.");
-
+          
+            // 🔍 Log full object
+            console.log("🧪 userCredential:", JSON.stringify(userCredential, null, 2));
+          
+            if (!userCredential || !userCredential.user) {
+              console.warn("⚠️ userCredential is null or missing user object!");
+              Alert.alert("Firebase Auth Error", "User credential object is invalid.");
+              return;
+            }
+          
+            console.log("🔥 Firebase UID:", userCredential.user.uid);
+            console.log("✅ createUserWithEmailAndPassword succeeded.");
+          
             console.log("➡️ Attempting updateProfile...");
             await updateProfile(userCredential.user, {
-                displayName: finalUser.name, // Ensure name is here
-                photoURL: finalUser.photo, // Ensure photo is here
+              displayName: finalUser.name,
+              photoURL: finalUser.photo,
             });
             console.log("✅ updateProfile succeeded.");
-
-            console.log('🎉 Firebase user created successfully:', userCredential.user.email);
+          
             Alert.alert('Success', 'User registered successfully!');
             navigation.navigate('SignIn');
-        } catch (error) {
-            console.error('❌ Firebase registration error:', error); // This is your original catch
+          } catch (error) {
+            console.log("❌ Firebase Auth error object:", error);
+            console.log("❌ Error code:", error.code);
+            console.log("❌ Error message:", error.message);
             Alert.alert('Registration failed', error.message);
-        }
+          }
+          
     };
 
     return (

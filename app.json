@@ -4,7 +4,7 @@
     "slug": "i-am-available",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -17,9 +17,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.thatboy123.iamavailable"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,6 +40,11 @@
           ]
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4ed2531a-5470-428b-960d-d6c62e9112e7"
+      }
+    }
   }
 }
