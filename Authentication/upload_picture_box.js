@@ -1,3 +1,4 @@
+//upload_picture_box.js
 import {useRoute, useNavigation} from '@react-navigation/native';
 import React, {useState, useEffect} from 'react';
 import {
@@ -18,11 +19,15 @@ import ScreenWrapper from './ScreenWrapper';
 import defaultphoto from '../assets/defaulticon.png';
 import {
     createUserWithEmailAndPassword,
-    updateProfile
+    updateProfile,
+    signOut
   } from 'firebase/auth';
 import { auth } from '../firebaseconfig';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebaseconfig'; 
 
 const ProfilePictureUploadBox = () => {
+    const [isSigningUp, setIsSigningUp] = useState(false);
     const navigation = useNavigation();
     const route = useRoute();
     const user = route.params || {}; // Get user data from navigation params
@@ -56,67 +61,62 @@ const ProfilePictureUploadBox = () => {
         }
     };
 
-    const handleSignUp = async () => {
-        console.log("👆 'Sign Up' button pressed."); // Log when button is pressed
+  const handleSignUp = async () => {
+  if (isSigningUp) return; // Prevent multiple clicks
 
-        if (!photoBase64) {
-            Alert.alert('Wait!', 'Please select a photo before signing up.');
-            console.log("🛑 Photo not selected, returning early."); // Log if returning early
-            return;
-        }
+  if (!photoBase64) {
+    Alert.alert('Wait!', 'Please select a photo before signing up.');
+    return;
+  }
 
-        console.log("✅ Passed photo check, attempting Firebase signup..."); // Log before Firebase calls
+  setIsSigningUp(true); // Start cooldown
 
-        const finalUser = {
-            ...user,
-            photo: `data:image/jpeg;base64,${photoBase64}`,
-        };
+  const finalUser = {
+    ...user,
+    photo: `data:image/jpeg;base64,${photoBase64}`,
+  };
 
-        // Log the data we are about to send to Firebase Auth
-        console.log("📧 Email to use:", finalUser.email);
-        console.log("🔑 Password to use:", finalUser.password ? "********" : "No password provided"); // Mask password
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, finalUser.email, finalUser.password);
+    const uid = userCredential.user.uid;
+
+        //  Create Firestore user
+        await setDoc(doc(db, "users", finalUser.hashtag), {
+            uid,
+            name: finalUser.name,
+            email: finalUser.email,
+            hashtag: finalUser.hashtag,
+            photo: finalUser.photo,
+            roles: [],
+            groups: [],
+        });
+        
+        // Create entry in `hashtags` collection for uniqueness tracking
+        await setDoc(doc(db, "hashtags", finalUser.hashtag), {
+            type: "hashtag",
+            value: finalUser.hashtag,
+            createdAt: new Date().toISOString()
+        });
+
+        await setDoc(doc(db, "emails", finalUser.email), {
+            type: "email",
+            value: finalUser.email,
+            createdAt: new Date().toISOString()
+          });
 
 
+            await signOut(auth);
+    Alert.alert('Success', 'User registered successfully!');
+    navigation.navigate('SignIn');
+  } catch (error) {
+    console.log("❌ Firebase error:", error);
+    Alert.alert('Registration failed', error.message);
+  } finally {
+    setTimeout(() => setIsSigningUp(false), 5000); // Re-enable after 5 seconds
+  }
+};
 
-        try {
-            console.log("✅ Successfully entered the try block.");
-            console.log("➡️ Attempting createUserWithEmailAndPassword...");
-          
-            const userCredential = await createUserWithEmailAndPassword(
-              auth,
-              finalUser.email,
-              finalUser.password
-            );
-          
-            // 🔍 Log full object
-            console.log("🧪 userCredential:", JSON.stringify(userCredential, null, 2));
-          
-            if (!userCredential || !userCredential.user) {
-              console.warn("⚠️ userCredential is null or missing user object!");
-              Alert.alert("Firebase Auth Error", "User credential object is invalid.");
-              return;
-            }
-          
-            console.log("🔥 Firebase UID:", userCredential.user.uid);
-            console.log("✅ createUserWithEmailAndPassword succeeded.");
-          
-            console.log("➡️ Attempting updateProfile...");
-            await updateProfile(userCredential.user, {
-              displayName: finalUser.name,
-              photoURL: finalUser.photo,
-            });
-            console.log("✅ updateProfile succeeded.");
-          
-            Alert.alert('Success', 'User registered successfully!');
-            navigation.navigate('SignIn');
-          } catch (error) {
-            console.log("❌ Firebase Auth error object:", error);
-            console.log("❌ Error code:", error.code);
-            console.log("❌ Error message:", error.message);
-            Alert.alert('Registration failed', error.message);
-          }
-          
-    };
+    
 
     return (
         <ScreenWrapper>
@@ -149,9 +149,10 @@ const ProfilePictureUploadBox = () => {
                                 <Text style={styles.selectPhotoLink}>Select Photo</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-                                <Text style={styles.buttonText}>Sign Up</Text>
+                            <TouchableOpacity style={[styles.button, isSigningUp && { opacity: 0.5 }]} onPress={handleSignUp} disabled={isSigningUp}>
+                            <Text style={styles.buttonText}>Sign Up</Text>
                             </TouchableOpacity>
+
                         </View>
 
                         <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
