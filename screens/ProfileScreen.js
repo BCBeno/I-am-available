@@ -183,8 +183,7 @@ export default function ProfileScreen({ route, navigation }) {
                                 style={{ marginLeft: "auto" }}
                                 onPress={() =>
                                     navigation.navigate("StudentAvailabilityDetails", {
-                                        user: profile,
-                                        availabilityIndex: index,
+                                        availability: availability, // Pass the availability object directly
                                     })
                                 }
                             >
