@@ -14,18 +14,42 @@ export default function ProfileScreen({ route, navigation }) {
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
+                // Fetch the current user's groups
+                const currentUserRef = doc(db, "users", currentUser.hashtag);
+                const currentUserSnap = await getDoc(currentUserRef);
+
+                if (!currentUserSnap.exists()) {
+                    console.error("No such current user document!");
+                    setLoading(false);
+                    return;
+                }
+
+                const currentUserData = currentUserSnap.data();
+                const userGroups = Array.isArray(currentUserData.groups)
+                    ? currentUserData.groups.map((group) => group.groupReference)
+                    : [];
+
+                // Fetch the profile user data
                 const userRef = doc(db, "users", hashtag);
                 const userSnap = await getDoc(userRef);
+
                 if (userSnap.exists()) {
                     const userData = userSnap.data();
+
                     const availabilitiesRef = collection(db, "availabilities");
                     const availabilitiesQuery = query(
                         availabilitiesRef,
                         where("userHashtag", "==", hashtag)
                     );
                     const availabilitiesSnap = await getDocs(availabilitiesQuery);
-                    const availabilities = availabilitiesSnap.docs.map((doc) => doc.data());
-                    setProfile({ ...userData, availabilities });
+
+                    // Filter availabilities based on current user's group membership
+                    const filteredAvailabilities = availabilitiesSnap.docs
+                        .map((doc) => doc.data())
+                        .filter((availability) => userGroups.includes(availability.group));
+
+
+                    setProfile({ ...userData, availabilities: filteredAvailabilities });
                 } else {
                     console.error("No such user document!");
                 }
@@ -37,7 +61,7 @@ export default function ProfileScreen({ route, navigation }) {
         };
 
         fetchUserProfile();
-    }, [hashtag]);
+    }, [hashtag, currentUser.hashtag]);
 
     if (loading) {
         return (
@@ -69,7 +93,7 @@ export default function ProfileScreen({ route, navigation }) {
                     onPress={() => {
                         const routes = navigation.getState().routes;
                         const previousScreen = routes[routes.length - 2]?.name;
-
+                        
                         if (previousScreen !== "ChatDetails") {
                             const chatId = [currentUser.hashtag, profile.hashtag].sort().join("_");
 
