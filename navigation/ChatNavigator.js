@@ -21,7 +21,7 @@ const ChatNavigator = ({user}) => {
                 component={ChatDetailsScreen}
                 initialParams={{currentUser: user}} // Pass user as initialParams
             />
-            <Stack.Screen name="Profile" component={ProfileScreen}/>
+            <Stack.Screen name="Profile" component={ProfileScreen} initialParams={{currentUser: user}}/>
             <Stack.Screen
                 name="StudentAvailabilityDetails"
                 component={StudentAvailabilityDetailsScreen}
