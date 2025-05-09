@@ -65,9 +65,11 @@ export default function App() {
               await new Promise(resolve => setTimeout(resolve, 100));
           
               console.error("🔐 Attempting to initialize Firebase Auth with persistence...");
-              const auth = initializeAuth(app, {
-                persistence: getReactNativePersistence(ReactNativeAsyncStorage),
-              });
+            
+              const auth = getAuth(app);
+              console.log("⚠️ Using getAuth(): Auth will not persist across sessions.");
+
+
               console.error("✅ Firebase Auth initialized with AsyncStorage persistence.");
               setFirebaseAuth(auth);
           
