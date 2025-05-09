@@ -25,7 +25,7 @@ export default function ProfileScreen({ route, navigation }) {
                 }
 
                 const currentUserData = currentUserSnap.data();
-                const userGroups = Array.isArray(currentUserData.groups)
+                const currentUserGroups = Array.isArray(currentUserData.groups)
                     ? currentUserData.groups.map((group) => group.groupReference)
                     : [];
 
@@ -36,6 +36,21 @@ export default function ProfileScreen({ route, navigation }) {
                 if (userSnap.exists()) {
                     const userData = userSnap.data();
 
+                    // Query groups where the other user is the owner
+                    const groupsRef = collection(db, "groups");
+                    const groupsQuery = query(
+                        groupsRef,
+                        where("owner", "==", `/users/${hashtag}`) // Other user is the owner
+                    );
+                    const groupsSnap = await getDocs(groupsQuery);
+                    const filteredGroups = groupsSnap.docs
+                        .map((doc) => ({ id: doc.id, ...doc.data() }))
+                        .filter(
+                            (group) =>
+                                group.public || // Group is public
+                                currentUserGroups.includes(`/groups/${group.id}`) // Current user is a member
+                        );
+                    // Fetch availabilities and filter them
                     const availabilitiesRef = collection(db, "availabilities");
                     const availabilitiesQuery = query(
                         availabilitiesRef,
@@ -43,13 +58,15 @@ export default function ProfileScreen({ route, navigation }) {
                     );
                     const availabilitiesSnap = await getDocs(availabilitiesQuery);
 
-                    // Filter availabilities based on current user's group membership
                     const filteredAvailabilities = availabilitiesSnap.docs
                         .map((doc) => doc.data())
-                        .filter((availability) => userGroups.includes(availability.group));
+                        .filter((availability) => currentUserGroups.includes(availability.group));
 
-
-                    setProfile({ ...userData, availabilities: filteredAvailabilities });
+                    setProfile({
+                        ...userData,
+                        availabilities: filteredAvailabilities || [],
+                        groups: filteredGroups || [],
+                    });
                 } else {
                     console.error("No such user document!");
                 }
@@ -183,7 +200,7 @@ export default function ProfileScreen({ route, navigation }) {
                 {Array.isArray(profile.groups) && profile.groups.map((group) => (
                     <View key={group.id} style={styles.groupItem}>
                         <Text style={styles.groupName}>{group.name}</Text>
-                        <Text style={styles.groupId}>#{group.hashtag}</Text>
+                        <Text style={styles.groupId}>#{group.id}</Text>
                         <View
                             style={{
                                 flexDirection: "row",
@@ -194,7 +211,7 @@ export default function ProfileScreen({ route, navigation }) {
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
                                 <MaterialIcons name="group" size={20} color="gray" />
                                 <Text style={styles.groupMembers}>
-                                    {group.members.length} members
+                                    {group.groupMembers?.length || 0} members
                                 </Text>
                             </View>
                             <TouchableOpacity>
