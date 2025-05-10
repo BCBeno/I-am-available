@@ -1,3 +1,4 @@
+//ProfilePage.js
 import React, { useState, useEffect } from 'react';
 import {
     View,
@@ -9,7 +10,6 @@ import {
     Alert,
     TextInput
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import defaultPhoto from '../assets/defaulticon.png';
 import editIcon from '../assets/edit-button-icon.png';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -18,11 +18,10 @@ import * as FileSystem from 'expo-file-system';
 import { defaultStyles } from '../default-styles';
 import BackButton from '../components/BackButton';
 import { loadCompleteUserData } from '../data/userDataLoader';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc,setDoc} from 'firebase/firestore';
 import { db } from '../firebaseconfig';
-
-const ProfileScreen = () => {
-    const navigation = useNavigation();
+import { deleteRoleData } from '../data/deleteRoleData';
+const ProfileScreen = (user) => {
     const [mockUser, setMockUser] = useState(null);
     const [tempUser, setTempUser] = useState(null);
     const [editMode, setEditMode] = useState(false);
@@ -35,16 +34,19 @@ const ProfileScreen = () => {
 
     useEffect(() => {
         const fetchUser = async () => {
-          try {
-            const data = await loadCompleteUserData(global.loggedInUserHashtag);
-            setMockUser(data); 
-          } catch (err) {
-            console.error("❌ Failed to load user in ProfileScreen:", err);
-          }
+            try {
+                const hashtag = global.loggedInUserHashtag ?? user?.hashtag;
+                const data = await loadCompleteUserData(hashtag);
+                setMockUser(data);
+            } catch (err) {
+                console.error("❌ Failed to load user in ProfileScreen:", err);
+            }
         };
+
+        fetchUser();
+    }, [user]);
       
-        fetchUser(); // ✅ Don't forget to call it
-      }, []);
+
     const saveProfileChanges = async (updatedUser) => {
         try {
             const userRef = doc(db, 'users', updatedUser.hashtag);
@@ -115,7 +117,7 @@ const ProfileScreen = () => {
                 availabilities: mockUser.availabilities || [],
             });
         } else {
-            setTempUser(null); // discard changes
+            setTempUser(null);
         }
         setEditMode((prev) => !prev);
     };

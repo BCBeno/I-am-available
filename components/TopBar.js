@@ -1,3 +1,4 @@
+//TopBar.js
 import {TextInput, TouchableOpacity, View} from "react-native";
 import {colors} from "../colors";
 import {defaultStyles} from "../default-styles";
