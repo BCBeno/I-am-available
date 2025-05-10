@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, ScrollView, StyleSheet, ActivityIndicator, Text, RefreshControl } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebaseconfig";
 import NotificationCard from "../components/NotificationCard";
 import TopBar from "../components/TopBar";
@@ -65,13 +65,101 @@ export default function NotificationsScreen({ user }) {
         }
     };
 
+    const createGroupRequestNotifications = async (userHashtag) => {
+        try {
+            const groupsQuery = query(
+                collection(db, "groups"),
+                where("owner", "==", `/users/${userHashtag}`)
+            );
+            const groupsSnap = await getDocs(groupsQuery);
+
+            for (const groupDoc of groupsSnap.docs) {
+                const groupData = groupDoc.data();
+                const joinRequests = Array.isArray(groupData.joinRequests) ? groupData.joinRequests : [];
+
+                if (joinRequests.length > 0) {
+                    const enrichedRequests = await Promise.all(
+                        joinRequests.map(async (request) => {
+                            const userDocRef = doc(db, "users", request.hashtag);
+                            const userDoc = await getDoc(userDocRef);
+
+                            if (userDoc.exists()) {
+                                const userData = userDoc.data();
+                                return {
+                                    ...request,
+                                    name: userData.name,
+                                };
+                            } else {
+                                console.error(`User with hashtag ${request.hashtag} not found.`);
+                                return request;
+                            }
+                        })
+                    );
+
+                    const notificationsQuery = query(
+                        collection(db, "notifications"),
+                        where("group", "==", `/groups/${groupDoc.id}`),
+                        where("type", "==", "groupRequests")
+                    );
+                    const notificationsSnap = await getDocs(notificationsQuery);
+
+                    if (notificationsSnap.empty) {
+                        await addDoc(collection(db, "notifications"), {
+                            group: `/groups/${groupDoc.id}`,
+                            type: "groupRequests",
+                            title: `New requests to join your group.`,
+                            subject: groupData.name,
+                            dateTime: new Date().toISOString(),
+                            studentRequests: enrichedRequests,
+                        });
+                    } else {
+                        const notificationDocRef = notificationsSnap.docs[0].ref;
+                        const existingNotification = notificationsSnap.docs[0].data();
+
+                        const existingRequests = existingNotification.studentRequests || [];
+                        const mergedRequests = [
+                            ...existingRequests,
+                            ...enrichedRequests.filter(
+                                (newRequest) =>
+                                    !existingRequests.some(
+                                        (existingRequest) => existingRequest.hashtag === newRequest.hashtag
+                                    )
+                            ),
+                        ];
+
+                        await updateDoc(notificationDocRef, {
+                            studentRequests: mergedRequests,
+                            dateTime: new Date().toISOString(),
+                        });
+                    }
+                } else {
+                    const notificationsQuery = query(
+                        collection(db, "notifications"),
+                        where("group", "==", `/groups/${groupDoc.id}`),
+                        where("type", "==", "groupRequests")
+                    );
+                    const notificationsSnap = await getDocs(notificationsQuery);
+
+                    if (!notificationsSnap.empty) {
+                        const notificationDocRef = notificationsSnap.docs[0].ref;
+                        await deleteDoc(notificationDocRef);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error creating or updating group request notifications:", error);
+        }
+    };
+
     useEffect(() => {
         fetchUserAndNotifications();
+        createGroupRequestNotifications(user.hashtag);
     }, [user]);
 
     const onRefresh = () => {
         setRefreshing(true);
         fetchUserAndNotifications();
+        createGroupRequestNotifications(user.hashtag);
     };
 
     if (loading && !refreshing) {
