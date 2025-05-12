@@ -33,9 +33,16 @@ function Tabs({user, setLoggedInUser}) {
         >
             <Tab.Screen name="Groups">{() => <GroupStack/>}</Tab.Screen>
 
-            <Tab.Screen name="Availability">
-                {() => <AvailabilityNavigator user={user} refreshTrigger={refreshTrigger}/>}
-            </Tab.Screen>
+            <Tab.Screen name="Availability" key={refreshTrigger}>
+                {() => (
+                    <AvailabilityNavigator
+                    user={user}
+                    setLoggedInUser={setLoggedInUser}
+                    refreshTrigger={refreshTrigger}
+                    />
+                )}
+                </Tab.Screen>
+
 
             <Tab.Screen name="Notifications">{() => <NotificationNavigator user={user}/>}</Tab.Screen>
 
@@ -50,7 +57,13 @@ export default function MainTabNavigator({user, setLoggedInUser}) {
     return (
         <RootStack.Navigator screenOptions={{headerShown: false}}>
             <RootStack.Screen name="Tabs">
-                {() => <Tabs user={user} setLoggedInUser={setLoggedInUser}/>}
+            {() => (
+                <Tabs
+                key={user?.photo} //  This forces remount when photo changes
+                user={user}
+                setLoggedInUser={setLoggedInUser}
+                />
+            )}
             </RootStack.Screen>
             <RootStack.Screen name="ProfileFlow">
                 {({ route }) => (

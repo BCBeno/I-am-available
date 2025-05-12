@@ -4,12 +4,18 @@ import {useNavigation} from "@react-navigation/native";
 import NotificationCard from "../components/NotificationCard";
 import TopBar from "../components/TopBar";
 
-export default function NotificationsScreen({user}) {
+export default function NotificationsScreen({user,setLoggedInUser}) {//Also added setLoggedInUser
     const navigation = useNavigation();
     return (
         <View style={styles.container}>
-            <TopBar style={{paddingTop: "15%"}} setText={() => {
-            }}/>
+            {/* TOP BAR MODIFICATIONS TO MATCH THE FIGMA DESIGN */}
+                <TopBar
+                    style={{ paddingTop: "15%" }}
+                    setText={() => {}}
+                    setLoggedInUser={setLoggedInUser}
+                    hideSearch={true}
+                    user={user}
+                />
             <ScrollView contentContainerStyle={styles.scrollView}>
                 {user.notifications.map((notification, index) => (
                     <NotificationCard

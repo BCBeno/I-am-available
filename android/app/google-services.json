@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1007358203617",
+    "project_id": "i-am-available",
+    "storage_bucket": "i-am-available.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1007358203617:android:7fc3bb4f922562505349a0",
+        "android_client_info": {
+          "package_name": "com.thatboy123.iamavailable"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQV2r-eZ7qaXD798x6l5LO8YjyW1bBUsg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
