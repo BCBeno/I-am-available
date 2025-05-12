@@ -70,11 +70,21 @@ const GroupRequests = () => {
             });
 
             if (action === "accepted") {
+                // Add the user to the group's members
                 await updateDoc(groupDocRef, {
                     groupMembers: arrayUnion({
                         userReference: `/users/${userRequest.hashtag}`,
-                        userRole: `${userRequest.hashtag}-member`,
+                        userRole: `${userRequest.hashtag}`,
                         notifications: false,
+                    }),
+                });
+
+                // Add the group to the user's groups
+                const userDocRef = doc(db, "users", userRequest.hashtag);
+                await updateDoc(userDocRef, {
+                    groups: arrayUnion({
+                        groupReference: `/groups/${groupInfo.id.split("/").pop()}`,
+                        userRole: `${userRequest.hashtag}`,
                     }),
                 });
             }

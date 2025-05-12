@@ -40,7 +40,7 @@ export default function ProfileScreen({ route, navigation }) {
                     const groupsRef = collection(db, "groups");
                     const groupsQuery = query(
                         groupsRef,
-                        where("owner", "==", `/users/${hashtag}`) // Other user is the owner
+                        where("ownerRoleHashtag", "==", `${hashtag}`) // Other user is the owner
                     );
                     const groupsSnap = await getDocs(groupsQuery);
                     const filteredGroups = groupsSnap.docs
@@ -54,13 +54,12 @@ export default function ProfileScreen({ route, navigation }) {
                     const availabilitiesRef = collection(db, "availabilities");
                     const availabilitiesQuery = query(
                         availabilitiesRef,
-                        where("userHashtag", "==", hashtag)
+                        where("roleHashtag", "==", hashtag)
                     );
                     const availabilitiesSnap = await getDocs(availabilitiesQuery);
-
                     const filteredAvailabilities = availabilitiesSnap.docs
                         .map((doc) => doc.data())
-                        .filter((availability) => currentUserGroups.includes(availability.group));
+                        .filter((availability) => currentUserGroups.includes(`/groups/${availability.group}`));
 
                     setProfile({
                         ...userData,
