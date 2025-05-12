@@ -1,3 +1,4 @@
+//delteRoleData.js
 import {
   deleteDoc,
   doc,
@@ -18,9 +19,9 @@ export const deleteRoleData = async (roleHashtag) => {
       console.warn(`⚠️ No hashtag doc to delete for ${roleHashtag}`)
     );
 
-    // 2. Identify groups owned by this role (via ownerrolehashtag)
+    // 2. Identify groups owned by this role (via ownerRoleHashtag)
     const ownedGroupsSnap = await getDocs(
-      query(collection(db, 'groups'), where('ownerrolehashtag', '==', roleHashtag))
+      query(collection(db, 'groups'), where('ownerRoleHashtag', '==', roleHashtag))
     );
     for (const docSnap of ownedGroupsSnap.docs) {
       ownedGroupIds.add(docSnap.id);
@@ -63,7 +64,7 @@ export const deleteRoleData = async (roleHashtag) => {
     for (const docSnap of groupsSnap.docs) {
       const groupData = docSnap.data();
       const newMembers = (groupData.groupMembers || []).filter(
-        (m) => m.userRole !== roleHashtag
+        (m) => m.roleHashtag !== roleHashtag
       );
       if (newMembers.length !== (groupData.groupMembers || []).length) {
         await updateDoc(doc(db, 'groups', docSnap.id), {
@@ -72,6 +73,21 @@ export const deleteRoleData = async (roleHashtag) => {
         console.log(`👥 Removed role ${roleHashtag} from groupMembers of ${docSnap.id}`);
       }
     }
+
+    // 8. Remove this role from joinRequests arrays in all groups
+    for (const docSnap of groupsSnap.docs) {
+      const groupData = docSnap.data();
+      const newJoinRequests = (groupData.joinRequests || []).filter(
+        (req) => req.hashtag !== roleHashtag
+      );
+      if (newJoinRequests.length !== (groupData.joinRequests || []).length) {
+        await updateDoc(doc(db, 'groups', docSnap.id), {
+          joinRequests: newJoinRequests,
+        });
+        console.log(`🧼 Removed joinRequests by role ${roleHashtag} from ${docSnap.id}`);
+      }
+    }
+
 
     console.log(`✅ Completed full deletion for role: ${roleHashtag}`);
   } catch (err) {

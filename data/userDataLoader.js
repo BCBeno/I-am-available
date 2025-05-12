@@ -38,11 +38,11 @@ export const loadCompleteUserData = async (hashtag) => {
     const group = docSnap.data();
     const id = docSnap.id;
 
-    const isOwner = roleHashtags.includes(group.ownerrolehashtag);
+    const isOwner = roleHashtags.includes(group.ownerRoleHashtag);
     const isMember =
     Array.isArray(group.groupMembers) &&
     group.groupMembers.some(member =>
-      roleHashtags.includes(member.userRole)
+      roleHashtags.includes(member.roleHashtag)
     );
   
     if (isOwner || isMember) {

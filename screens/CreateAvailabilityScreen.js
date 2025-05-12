@@ -19,7 +19,7 @@ export default function CreateAvailabilityScreen({ navigation, route, setLoggedI
 
 const roleHashtags = user.roles?.map(r => r.hashtag) || [];
 const groupOptions = Object.values(user.groups || {}).filter(
-  (group) => roleHashtags.includes(group.ownerrolehashtag)
+  (group) => roleHashtags.includes(group.ownerRoleHashtag)
 );
 
 
@@ -52,13 +52,13 @@ const groupOptions = Object.values(user.groups || {}).filter(
     // Set default group and profile (owner role)
     const defaultGroup = groupOptions[0];
     setGroup(defaultGroup.id);
-    setProfile(defaultGroup.ownerrolehashtag);
+    setProfile(defaultGroup.ownerRoleHashtag);
   }, [groupOptions]);
   
   useEffect(() => {
     const selectedGroup = groupOptions.find(g => g.id === group);
     if (selectedGroup) {
-      setProfile(selectedGroup.ownerrolehashtag);
+      setProfile(selectedGroup.ownerRoleHashtag);
     }
   }, [group]);
   

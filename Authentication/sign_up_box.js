@@ -1,4 +1,4 @@
-//sign_up_box.js/
+//sign_up_box.js
 import { db } from '../firebaseconfig'; 
 import React, {useState} from 'react';
 import {
