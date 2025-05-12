@@ -13,9 +13,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import ScreenWrapper from './ScreenWrapper';
-import { loadCompleteUserData } from '../data/userDataLoader';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebaseconfig';
@@ -45,8 +43,6 @@ const SignInBox = ({ navigation, setLoggedInUser }) => {
       }
   
       const userData = querySnapshot.docs[0].data();
-      const fullUserData = await loadCompleteUserData(userData.hashtag);
-      setLoggedInUser(fullUserData);
     } catch (err) {
       console.log("❌ Sign-in error:", err);
       let errorMessage = 'An unexpected error occurred. Please try again.';
