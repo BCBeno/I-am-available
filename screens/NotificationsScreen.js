@@ -24,30 +24,75 @@ export default function NotificationsScreen({ user }) {
                 const userData = userSnap.docs[0].data();
                 setUserData(userData);
 
-                const userGroups = userData.groups.map((group) => group.groupReference);
-
+                // Fetch system notifications
                 const systemNotificationsQuery = query(
                     collection(db, "notifications"),
                     where("group", "==", "system")
                 );
                 const systemNotificationsSnap = await getDocs(systemNotificationsQuery);
 
-                const groupNotificationsQuery = query(
-                    collection(db, "notifications"),
-                    where("group", "in", userGroups)
-                );
-                const groupNotificationsSnap = await getDocs(groupNotificationsQuery);
-
                 const systemNotifications = systemNotificationsSnap.docs.map((doc) => ({
                     id: doc.id,
                     ...doc.data(),
                 }));
-                const groupNotifications = groupNotificationsSnap.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
 
-                const allNotifications = [...systemNotifications, ...groupNotifications].sort((a, b) => {
+                // Fetch group request notifications
+                const groupNotificationsQuery = query(
+                    collection(db, "notifications"),
+                    where("type", "==", "groupRequests")
+                );
+                const groupNotificationsSnap = await getDocs(groupNotificationsQuery);
+
+                const groupNotifications = await Promise.all(
+                    groupNotificationsSnap.docs.map(async (notificationDoc) => {
+                        const notificationData = notificationDoc.data();
+                        const groupId = notificationData.group.split("/").pop();
+
+                        // Fetch the group document to check ownership
+                        const groupDocRef = doc(db, "groups", groupId);
+                        const groupDoc = await getDoc(groupDocRef);
+
+                        if (groupDoc.exists()) {
+                            const groupData = groupDoc.data();
+                            if (groupData.ownerRoleHashtag === user.hashtag) {
+                                return {
+                                    id: notificationDoc.id,
+                                    ...notificationData,
+                                };
+                            }
+                        }
+                        return null; // Exclude notifications for groups the user does not own
+                    })
+                );
+
+                // Filter out null values (notifications the user does not own)
+                const filteredGroupNotifications = groupNotifications.filter((notification) => notification !== null);
+
+                // Fetch announcements from groups the user is joined in
+                const userGroups = Array.isArray(userData.groups) ? userData.groups : [];
+                const groupIds = userGroups.map((group) => group.groupReference.split("/").pop());
+
+                let announcements = [];
+                if (groupIds.length > 0) {
+                    const announcementsQuery = query(
+                        collection(db, "notifications"),
+                        where("type", "==", "announcement"),
+                        where("group", "in", groupIds.map((id) => `/groups/${id}`))
+                    );
+                    const announcementsSnap = await getDocs(announcementsQuery);
+
+                    announcements = announcementsSnap.docs.map((doc) => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    }));
+                }
+
+                // Combine all notifications
+                const allNotifications = [
+                    ...systemNotifications,
+                    ...filteredGroupNotifications,
+                    ...announcements,
+                ].sort((a, b) => {
                     const dateA = new Date(a.dateTime);
                     const dateB = new Date(b.dateTime);
                     return dateB - dateA;
@@ -69,7 +114,7 @@ export default function NotificationsScreen({ user }) {
         try {
             const groupsQuery = query(
                 collection(db, "groups"),
-                where("owner", "==", `/users/${userHashtag}`)
+                where("ownerRoleHashtag", "==", `${userHashtag}`)
             );
             const groupsSnap = await getDocs(groupsQuery);
 
