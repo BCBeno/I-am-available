@@ -17,6 +17,7 @@ import {DEV_MODE} from '../config';
 import { signOut } from 'firebase/auth'; 
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 const SignUpBox = () => {
+  
     const navigation = useNavigation();
     const [name, setName] = useState('');
     const [userHashtag, setUserHashtag] = useState('');
@@ -39,9 +40,18 @@ const SignUpBox = () => {
         );
     };
 
+    const validateEmail = (email) => {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(email.toLowerCase());
+    };
+    
     const handleSignUp = async () => {
         if (!name || !email || !userHashtag || !password || !confirmPassword) {
           Alert.alert('Error', 'Please fill out all fields.');
+          return;
+        }
+        if (!validateEmail(email)) {
+          Alert.alert('Invalid Email', 'Please enter a valid email address.');
           return;
         }
       

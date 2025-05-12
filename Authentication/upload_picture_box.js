@@ -104,10 +104,8 @@ const ProfilePictureUploadBox = () => {
             createdAt: new Date().toISOString()
           });
 
-
-            await signOut(auth);
-    Alert.alert('Success', 'User registered successfully!');
     navigation.navigate('SignIn');
+    
   } catch (error) {
     console.log("❌ Firebase error:", error);
     Alert.alert('Registration failed', error.message);

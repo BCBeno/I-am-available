@@ -54,12 +54,8 @@ export default function TopBar({ style, setText, user, setLoggedInUser, hideSear
             </View>
 
             <TouchableOpacity
-                onPress={() =>
-                    navigation.navigate('ProfileFlow', {
-                        user: user,
-                        setLoggedInUser: setLoggedInUser
-                    })
-                }
+onPress={() => navigation.navigate('ProfileFlow')}
+                
             >
                 <Image
                     source={profileImageSource}
