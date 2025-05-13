@@ -64,40 +64,6 @@ async function registerForPushNotificationsAsync() {
   }
 }
 
-
-//  Real-time group availability listener
-
-function setupGroupListeners(user) {
-  unsubscribeRefs.current.forEach((unsub) => unsub()); // Clear any old ones
-  unsubscribeRefs.current = [];
-
-  const groupMap = user.groups || {};
-  Object.keys(groupMap).forEach((groupId) => {
-    const groupRef = doc(db, 'groups', groupId);
-    let lastNotified = null;
-
-    const unsub = onSnapshot(groupRef, (snapshot) => {
-      const data = snapshot.data();
-      if (data?.owneravailable) {
-        const now = Date.now();
-        if (!lastNotified || now - lastNotified > 10 * 60 * 1000) {
-          Notifications.scheduleNotificationAsync({
-            content: {
-              title: `📍 Group ${groupId}`,
-              body: `The owner is now available in "${data.name || groupId}"`,
-            },
-            trigger: null,
-          });
-          lastNotified = now;
-        }
-      }
-    });
-
-    unsubscribeRefs.current.push(unsub);
-  });
-}
-
-
 export default function App() {
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
