@@ -1,14 +1,26 @@
+//ProfileFlow.js
 import React from 'react';
-import {createStackNavigator} from '@react-navigation/stack';
-import ProfilePage from '../screens/ProfilePage';
+import { createStackNavigator } from '@react-navigation/stack';
+import ProfileScreen from '../screens/ProfilePage';
 
 const Stack = createStackNavigator();
-const ProfileFlow = ({user, setLoggedInUser}) => (
-    <Stack.Navigator screenOptions={{headerShown: false}}>
-        <Stack.Screen name="ProfilePage">
-            {(props) => <ProfilePage {...props} user={user} setLoggedInUser={setLoggedInUser}/>}
-        </Stack.Screen>
+
+const ProfileFlow = ({ user, setLoggedInUser }) => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ProfileScreen">
+        {(props) => (
+          <ProfileScreen
+            {...props}
+            user={user}
+            setLoggedInUser={setLoggedInUser}
+          />
+        )}
+      </Stack.Screen>
     </Stack.Navigator>
-);
+  );
+};
+
+
 
 export default ProfileFlow;

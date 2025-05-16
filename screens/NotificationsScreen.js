@@ -7,7 +7,7 @@ import NotificationCard from "../components/NotificationCard";
 import TopBar from "../components/TopBar";
 import { format } from "date-fns";
 
-export default function NotificationsScreen({ user }) {
+export default function NotificationsScreen({ user, setLoggedInUser }) {
     const navigation = useNavigation();
     const [userData, setUserData] = useState(null);
     const [notifications, setNotifications] = useState([]);
@@ -54,7 +54,8 @@ export default function NotificationsScreen({ user }) {
 
                         if (groupDoc.exists()) {
                             const groupData = groupDoc.data();
-                            if (groupData.ownerId === user.hashtag) {
+                            // Use ownerId instead of ownerRoleHashtag if needed
+                            if (groupData.ownerRoleHashtag === user.hashtag) {
                                 return {
                                     id: notificationDoc.id,
                                     ...notificationData,
@@ -114,7 +115,7 @@ export default function NotificationsScreen({ user }) {
         try {
             const groupsQuery = query(
                 collection(db, "groups"),
-                where("ownerId", "==", `${userHashtag}`)
+                where("ownerRoleHashtag", "==", `${userHashtag}`)
             );
             const groupsSnap = await getDocs(groupsQuery);
 
@@ -225,7 +226,14 @@ export default function NotificationsScreen({ user }) {
 
     return (
         <View style={styles.container}>
-            <TopBar style={{ paddingTop: "15%" }} setText={() => {}} />
+            {/* TOP BAR MODIFICATIONS TO MATCH THE FIGMA DESIGN */}
+            <TopBar
+                style={{ paddingTop: "15%" }}
+                setText={() => {}}
+                setLoggedInUser={setLoggedInUser}
+                hideSearch={true}
+                user={user}
+            />
             <ScrollView
                 contentContainerStyle={styles.scrollView}
                 refreshControl={
