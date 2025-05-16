@@ -1,4 +1,5 @@
-import React, {useState} from 'react';
+//ProfilePage.js
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -9,28 +10,27 @@ import {
     Alert,
     TextInput
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import defaultPhoto from '../assets/defaulticon.png'
+import defaultPhoto from '../assets/defaulticon.png';
 import editIcon from '../assets/edit-button-icon.png';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
-import {getUser, updateUser} from "../data/fakeDB.js";
 import * as FileSystem from 'expo-file-system';
-import {isHashtagTaken} from '../data/fakeDB';
-import {defaultStyles} from "../default-styles";
-import BackButton from "../components/BackButton";
+import { defaultStyles } from '../default-styles';
+import BackButton from '../components/BackButton';
+import { loadCompleteUserData } from '../data/userDataLoader';
+import { doc, updateDoc,setDoc} from 'firebase/firestore';
+import { db } from '../firebaseconfig';
+import { deleteRoleData } from '../data/deleteRoleData';
+import { useFocusEffect } from '@react-navigation/native';
+import { BackHandler } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { getDoc } from 'firebase/firestore'; 
+import { getAuth, signOut } from 'firebase/auth';
 
-
-const ProfileScreen = ({user, setLoggedInUser}) => {
-    const navigation = useNavigation();
-    const userFromDB = getUser(user.hashtag);
-
-
-    const [mockUser, setMockUser] = useState({
-        ...userFromDB,
-        roles: userFromDB.roles || [],
-        availabilities: userFromDB.availabilities || [],
-    });
+const ProfileScreen = ({ user, setLoggedInUser }) => {
+    const navigation = useNavigation(); 
+    const [deletedRoleHashtags, setDeletedRoleHashtags] = useState([]);
+    const [mockUser, setMockUser] = useState(null);
     const [tempUser, setTempUser] = useState(null);
     const [editMode, setEditMode] = useState(false);
     const [showOptions, setShowOptions] = useState(false);
@@ -38,7 +38,29 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
     const [editingRole, setEditingRole] = useState(null);
     const [editedRoleName, setEditedRoleName] = useState('');
     const [newRoleModalVisible, setNewRoleModalVisible] = useState(false);
-    const [newRoleData, setNewRoleData] = useState({name: '', hashtag: ''});
+    const [newRoleData, setNewRoleData] = useState({ name: '', hashtag: '' });
+    const [newHashtagsToCreate, setNewHashtagsToCreate] = useState([]);
+    const [confirmDisabled, setConfirmDisabled] = useState(false);// Confirm button disabled state 5 second coolwond to assure no spamming 
+
+    useEffect(() => {
+        setMockUser(user); // use the user that was passed from navigation
+    }, [user]);
+    
+      
+
+    const saveProfileChanges = async (updatedUser) => {
+        try {
+            const userRef = doc(db, 'users', updatedUser.hashtag);
+            await updateDoc(userRef, {
+                roles: updatedUser.roles,
+                photo: updatedUser.photo || '',
+            });
+            console.log('✅ Profile successfully updated in Firestore.');
+        } catch (error) {
+            console.error('❌ Failed to update profile:', error);
+            Alert.alert('Error', 'Failed to save your profile changes.');
+        }
+    };
 
     const handlePickImage = async () => {
         if (!editMode) return;
@@ -70,7 +92,6 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
         }
     };
 
-
     const confirmEditRole = (hashtag) => {
         if (!editedRoleName.trim()) {
             Alert.alert('Error', 'Role name cannot be empty.');
@@ -80,7 +101,7 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
         setTempUser((prev) => ({
             ...prev,
             roles: prev.roles.map((r) =>
-                r.hashtag === hashtag ? {...r, name: editedRoleName.trim()} : r
+                r.hashtag === hashtag ? { ...r, name: editedRoleName.trim() } : r
             ),
         }));
 
@@ -88,7 +109,6 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
         setEditedRoleName('');
         setActiveDropdownIndex(null);
     };
-
 
     const handleEditProfile = () => {
         if (!editMode) {
@@ -98,72 +118,175 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
                 availabilities: mockUser.availabilities || [],
             });
         } else {
-            setTempUser(null); // discard changes
+            setTempUser(null);
         }
         setEditMode((prev) => !prev);
     };
 
     const handleDeleteRole = (hashtagToDelete) => {
         setTempUser((prev) => ({
-            ...prev,
-            roles: prev.roles.filter((r) => r.hashtag !== hashtagToDelete),
-            availabilities: prev.availabilities
-                ? prev.availabilities.filter((a) => a.roleHashtag !== hashtagToDelete)
-                : []
+          ...prev,
+          roles: prev.roles.filter((r) => r.hashtag !== hashtagToDelete),
+          availabilities: prev.availabilities
+            ? prev.availabilities.filter((a) => a.roleHashtag !== hashtagToDelete)
+            : [],
         }));
-    };
+      
+        setDeletedRoleHashtags((prev) => [...prev, hashtagToDelete]);
+      };
 
-
-    const handleAddNewRole = () => {
+      const handleAddNewRole = async () => {
         const trimmedName = newRoleData.name.trim();
         const trimmedHashtag = newRoleData.hashtag.trim();
-
+      
         if (!trimmedName || !trimmedHashtag) {
-            Alert.alert('Error', 'Both role name and hashtag are required.');
-            return;
+          Alert.alert('Error', 'Both role name and hashtag are required.');
+          return;
         }
-
-        // Check if hashtag is same as user's own hashtag
-        if (trimmedHashtag.toLowerCase() === mockUser.hashtag.toLowerCase()) {
-            Alert.alert('Error', 'Role hashtag cannot be the same as your user hashtag.');
-            return;
-        }
-
-        // Check if the hashtag is already used by one of this user's roles
+      
         const hashtagExistsInUser = tempUser.roles.some(
-            (r) => r.hashtag.toLowerCase() === trimmedHashtag.toLowerCase()
+          (r) => r.hashtag.toLowerCase() === trimmedHashtag.toLowerCase()
         );
-
+      
         if (hashtagExistsInUser) {
-            Alert.alert('Error', 'This hashtag is already used by one of your roles.');
-            return;
+          Alert.alert('Error', 'This hashtag is already used by one of your roles.');
+          return;
         }
-
-        // Check if hashtag is taken by another user
-        const hashtagTakenByOthers = isHashtagTaken(trimmedHashtag);
-        if (hashtagTakenByOthers) {
-            Alert.alert('Hashtag Taken', 'This hashtag is already used by another user. Please choose a different one.');
-            return;
+      
+        // Check global hashtags collection
+        const hashtagDoc = doc(db, 'hashtags', trimmedHashtag);
+        const snapshot = await getDoc(hashtagDoc);
+        if (snapshot.exists()) {
+          Alert.alert('Error', 'This hashtag is already used by another user.');
+          return;
         }
-
+      
         const newRole = {
-            name: trimmedName,
-            hashtag: trimmedHashtag,
+          name: trimmedName,
+          hashtag: trimmedHashtag,
         };
-
+      
+        //  Add to local temp user state
         setTempUser((prev) => ({
-            ...prev,
-            roles: [...prev.roles, newRole],
+          ...prev,
+          roles: [...prev.roles, newRole],
         }));
-
-        setNewRoleData({name: '', hashtag: ''});
+      
+        //  Create hashtag document in Firestore
+        setNewHashtagsToCreate((prev) => [...prev, trimmedHashtag]);
+      
+        setNewRoleData({ name: '', hashtag: '' });
         setNewRoleModalVisible(false);
-    };
+      };
 
+
+
+      const onBackPressHandler = () => {
+        if (editMode) {
+            Alert.alert(
+                'Discard Changes?',
+                'You have unsaved changes. Do you want to discard them?',
+                [
+                    { text: 'Cancel', style: 'cancel', onPress: () => {} },
+                    {
+                        text: 'Discard',
+                        style: 'destructive',
+                        onPress: () => {
+                            setEditMode(false);
+                            setTempUser(null);
+                            navigation.goBack();
+                        },
+                    },
+                ]
+            );
+            return true;
+        }
+        return false;
+    };
+    
+    const focusCallback = React.useCallback(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPressHandler);
+    
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (!editMode) return;
+    
+            e.preventDefault();
+            Alert.alert(
+                'Discard Changes?',
+                'You have unsaved changes. Do you want to discard them?',
+                [
+                    { text: 'Cancel', style: 'cancel', onPress: () => {} },
+                    {
+                        text: 'Discard',
+                        style: 'destructive',
+                        onPress: () => {
+                            setEditMode(false);
+                            setTempUser(null);
+                            navigation.dispatch(e.data.action);
+                        },
+                    },
+                ]
+            );
+        });
+    
+        return () => {
+            backHandler.remove();  // Corrected way to remove the listener
+            unsubscribe();
+        };
+    }, [editMode, navigation]);
+    
+    useFocusEffect(focusCallback); 
+    
+
+
+
+
+    if (!mockUser) {
+        return (
+            <View style={defaultStyles.container}>
+                <Text>Loading your profile...</Text>
+            </View>
+        );
+    }
 
     return (
         <View style={defaultStyles.container}>
-            <BackButton/>
+            <View style={styles.topBarContainer}>
+            <BackButton />
+          
+          
+            {!editMode && (
+            <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={() => {
+                Alert.alert(
+                    'Log Out',
+                    'Are you sure you want to log out?',
+                    [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Log Out',
+                        style: 'destructive',
+                        onPress: async () => {
+                        try {
+                            await signOut(getAuth());
+                            setLoggedInUser(null);
+                        } catch (err) {
+                            console.error("❌ Logout failed:", err);
+                            Alert.alert('Error', 'Failed to log out.');
+                        }
+                        },
+                    },
+                    ]
+                );
+                }}
+            >
+                <Text style={styles.logoutText}>Log Out</Text>
+            </TouchableOpacity>
+            )}
+
+            </View>
+
             <ScrollView contentContainerStyle={styles.container}>
                 {/* Back Button */}
                 {/* Profile Card */}
@@ -280,37 +403,77 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
                     </TouchableOpacity>
 
 
+
                     <TouchableOpacity
-                        style={styles.confirmButton}
-                        onPress={() => {
-                            let updatedTempUser = {...tempUser};
+                        style={[styles.confirmButton, confirmDisabled && { opacity: 0.6 }]}
+                        disabled={confirmDisabled}
+                        onPress={async () => {
+                            setConfirmDisabled(true); // Start cooldown
+
+                            let updatedTempUser = { ...tempUser };
 
                             if (editingRole && editedRoleName.trim()) {
-                                updatedTempUser.roles = updatedTempUser.roles.map((r) =>
-                                    r.hashtag === editingRole ? {...r, name: editedRoleName.trim()} : r
-                                );
+                            updatedTempUser.roles = updatedTempUser.roles.map((r) =>
+                                r.hashtag === editingRole ? { ...r, name: editedRoleName.trim() } : r
+                            );
                             }
 
                             if (tempUser?.profileImage) {
-                                updatedTempUser.photo = tempUser.profileImage;
+                            updatedTempUser.photo = tempUser.profileImage;
                             }
 
-                            updateUser(mockUser.hashtag, {
-                                ...updatedTempUser,
-                                availabilities: updatedTempUser.availabilities || []//ALSO DELETES AVAILABILITIES ASOCIATED WITH THE HASHTAG
+                            // Save to Firestore
+                            await saveProfileChanges({
+                            ...updatedTempUser,
+                            availabilities: updatedTempUser.availabilities || [],
                             });
-                            setMockUser(updatedTempUser);
+
+                            // Create new hashtags
+                            for (const newHashtag of newHashtagsToCreate) {
+                            const hashtagDoc = doc(db, 'hashtags', newHashtag);
+                            try {
+                                await setDoc(hashtagDoc, {
+                                value: newHashtag,
+                                type: 'hashtag',
+                                createdAt: new Date().toISOString(),
+                                });
+                            } catch (err) {
+                                console.error(`❌ Failed to create hashtag "${newHashtag}":`, err);
+                            }
+                            }
+
+                            // Delete roles and associated data
+                            for (const hashtag of deletedRoleHashtags) {
+                            try {
+                                await deleteRoleData(hashtag);
+                            } catch (err) {
+                                console.warn(`⚠️ Failed to delete data for hashtag ${hashtag}:`, err);
+                            }
+                            }
+
+                            // Reload fresh data from Firestore
+                            const freshData = await loadCompleteUserData(updatedTempUser.hashtag);
+                            setLoggedInUser(freshData);
+                            setMockUser(freshData);
+
+                            // Reset state
                             setTempUser(null);
                             setEditMode(false);
                             setEditingRole(null);
                             setEditedRoleName('');
+                            setDeletedRoleHashtags([]);
+                            setNewHashtagsToCreate([]);
 
-                            // Clearly set global user state:
-                            setLoggedInUser(updatedTempUser);
+                            // Re-enable button after 5 seconds
+                            setTimeout(() => setConfirmDisabled(false), 5000);
                         }}
-                    >
+                        >
                         <Text style={styles.confirmText}>Confirm</Text>
-                    </TouchableOpacity>
+                        </TouchableOpacity>
+
+
+
+
 
                 </View>
             )}
@@ -330,7 +493,7 @@ const ProfileScreen = ({user, setLoggedInUser}) => {
 
 
                         <TouchableOpacity onPress={() => {
-                            // TODO: handle delete
+              
                             alert(`Delete "${selectedRole.name}"`);
                             setShowOptions(false);
                         }}>
@@ -704,7 +867,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         elevation: 5,
     },
-
+    topBarContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+      },
+      
+      logoutButton: {
+        padding: 10,
+      },
+      
+      logoutText: {
+        color: '#80004d',
+        fontWeight: 'bold',
+        fontSize: 14,
+      },
 });
 
 export default ProfileScreen;

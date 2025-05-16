@@ -60,7 +60,6 @@ export default function ProfileScreen({ route, navigation }) {
                     const filteredAvailabilities = availabilitiesSnap.docs
                         .map((doc) => doc.data())
                         .filter((availability) => currentUserGroups.includes(`/groups/${availability.group}`));
-
                     setProfile({
                         ...userData,
                         availabilities: filteredAvailabilities || [],

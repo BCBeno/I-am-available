@@ -1,3 +1,4 @@
+//AvailabilityNavigator.js
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import AvailabilityScreen from '../screens/AvailabilityScreen';
@@ -7,40 +8,48 @@ import LocationDetailsScreen from '../screens/LocationDetailsScreen';
 
 const Stack = createStackNavigator();
 
-export default function AvailabilityNavigator({user, refreshTrigger}) { // ADD refreshTrigger
+export default function AvailabilityNavigator({ refreshTrigger, setLoggedInUser,user }) {
     return (
-        <Stack.Navigator screenOptions={{headerShown: false}}>
-            {/* 1) Main list */}
-            <Stack.Screen name="AvailabilityMain">
-                {({navigation, route}) => (
-                    <AvailabilityScreen
-                        user={user}
-                        navigation={navigation}
-                        route={route}
-                        refreshTrigger={refreshTrigger} //   defined
-                    />
-                )}
-            </Stack.Screen>
-
-            {/* 2) Details view */}
-            <Stack.Screen
-                name="OwnerAvailabilityDetails"
-                component={OwnerAvailabilityDetailsScreen}
-                initialParams={{user}}
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="AvailabilityMain">
+        {({ navigation, route }) => (
+            <AvailabilityScreen
+            user={user} 
+            navigation={navigation}
+            route={route}
+            refreshTrigger={refreshTrigger}
+            setLoggedInUser={setLoggedInUser}
             />
+        )}
+        </Stack.Screen>
 
-            {/* 3) Create new availability */}
-            <Stack.Screen
-                name="CreateAvailability"
-                component={CreateAvailabilityScreen}
-                initialParams={{user}}
-            />
 
-            {/* 4) Location details */}
-            <Stack.Screen
-                name="LocationDetails"
-                component={LocationDetailsScreen}
+  
+        <Stack.Screen name="OwnerAvailabilityDetails">
+        {(props) => (
+            <OwnerAvailabilityDetailsScreen
+            {...props}
+            user={user} 
+            setLoggedInUser={setLoggedInUser}
             />
-        </Stack.Navigator>
+        )}
+        </Stack.Screen>
+
+
+  
+        <Stack.Screen name="CreateAvailability">
+        {(props) => (
+            <CreateAvailabilityScreen
+            {...props}
+            user={user}
+            setLoggedInUser={setLoggedInUser}
+            />
+        )}
+        </Stack.Screen>
+
+  
+        <Stack.Screen name="LocationDetails" component={LocationDetailsScreen} />
+      </Stack.Navigator>
     );
-}
+  }
+  

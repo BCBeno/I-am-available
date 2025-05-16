@@ -193,7 +193,7 @@ export default function ChatScreen({route}) {
             />
             <Button title="Debug Profile" onPress={
                 () => {
-                    navigation.navigate("Profile", { hashtag: "4" })}
+                    navigation.navigate("Profile", { hashtag: "ben1" })}
                 } 
         />
         </View>
