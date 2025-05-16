@@ -40,7 +40,7 @@ export default function ProfileScreen({ route, navigation }) {
                     const groupsRef = collection(db, "groups");
                     const groupsQuery = query(
                         groupsRef,
-                        where("ownerRoleHashtag", "==", `${hashtag}`) // Other user is the owner
+                        where("ownerId", "==", `${hashtag}`) // Other user is the owner
                     );
                     const groupsSnap = await getDocs(groupsQuery);
                     const filteredGroups = groupsSnap.docs
