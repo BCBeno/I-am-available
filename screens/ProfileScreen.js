@@ -36,6 +36,16 @@ export default function ProfileScreen({ route, navigation }) {
                 if (userSnap.exists()) {
                     const userData = userSnap.data();
 
+                    // --- Get all role hashtags ---
+                    let roleHashtags = [];
+                    if (Array.isArray(userData.roles)) {
+                        roleHashtags = userData.roles.map(role => role.hashtag);
+                    }
+                    // Also include the main hashtag if not present
+                    if (!roleHashtags.includes(hashtag)) {
+                        roleHashtags.push(hashtag);
+                    }
+
                     // Query groups where the other user is the owner
                     const groupsRef = collection(db, "groups");
                     const groupsQuery = query(
@@ -50,16 +60,22 @@ export default function ProfileScreen({ route, navigation }) {
                                 group.public || // Group is public
                                 currentUserGroups.includes(`/groups/${group.id}`) // Current user is a member
                         );
-                    // Fetch availabilities and filter them
-                    const availabilitiesRef = collection(db, "availabilities");
-                    const availabilitiesQuery = query(
-                        availabilitiesRef,
-                        where("roleHashtag", "==", hashtag)
-                    );
-                    const availabilitiesSnap = await getDocs(availabilitiesQuery);
-                    const filteredAvailabilities = availabilitiesSnap.docs
-                        .map((doc) => doc.data())
-                        .filter((availability) => currentUserGroups.includes(`/groups/${availability.group}`));
+                    // --- Fetch availabilities for all role hashtags ---
+                    let filteredAvailabilities = [];
+                    if (roleHashtags.length > 0) {
+                        const availabilitiesRef = collection(db, "availabilities");
+                        // Firestore 'in' operator supports up to 10 values
+                        const availabilitiesQuery = query(
+                            availabilitiesRef,
+                            where("roleHashtag", "in", roleHashtags)
+                        );
+                        const availabilitiesSnap = await getDocs(availabilitiesQuery);
+                        filteredAvailabilities = availabilitiesSnap.docs
+                            .map((doc) => doc.data())
+                            .filter((availability) =>
+                                currentUserGroups.includes(`/groups/${availability.group}`)
+                            );
+                    }
                     setProfile({
                         ...userData,
                         availabilities: filteredAvailabilities || [],
