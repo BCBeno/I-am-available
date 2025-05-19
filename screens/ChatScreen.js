@@ -1,28 +1,73 @@
-import React, {useState} from "react";
-import {View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert, Image} from "react-native";
+import React, {useState, useEffect} from "react";
+import {View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert, Image, Button} from "react-native";
 import {defaultStyles} from "../default-styles";
 import {useNavigation} from "@react-navigation/native";
 import {MaterialIcons} from "@expo/vector-icons";
 import defaultAvatar from "../assets/default-avatar.png";
-import fakeDB from "../data/fakeDB";
-
+import {collection, query, where, onSnapshot, doc, getDoc, updateDoc, deleteDoc} from "firebase/firestore";
+import {db} from "../firebaseconfig";
 
 export default function ChatScreen({route}) {
-    const {currentUser} = route.params; // Access currentUser from route.params
-    const [user, setUser] = useState(fakeDB.users.filter((u) => u.id === currentUser.id)[0]);
-    const [originalChatData, setOriginalChatData] = useState(user.chats); // Store the original chat data
-    const [chatData, setChatData] = useState(user.chats); // Store the filtered chat data
+    const {currentUser} = route.params;
+    const [originalChatData, setOriginalChatData] = useState([]);
+    const [chatData, setChatData] = useState([]);
+    const [participantNames, setParticipantNames] = useState({});
+    const [participantPhotos, setParticipantPhotos] = useState({});
     const [searchQuery, setSearchQuery] = useState("");
     const navigation = useNavigation();
+
+    useEffect(() => {
+        const chatsRef = collection(db, "chats");
+        const q = query(chatsRef, where("participants", "array-contains", currentUser.hashtag));
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
+            const chats = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+            setOriginalChatData(chats);
+            setChatData(chats);
+
+            const names = {};
+            const photos = {};
+            for (const chat of chats) {
+                const otherParticipant = chat.participants.find(
+                    (participant) => participant !== currentUser.hashtag
+                );
+                if (otherParticipant && !names[otherParticipant]) {
+                    try {
+                        const userRef = doc(db, "users", otherParticipant);
+                        const userSnap = await getDoc(userRef);
+                        if (userSnap.exists()) {
+                            const userData = userSnap.data();
+                            names[otherParticipant] = userData.name || "Unknown User";
+                            photos[otherParticipant] = userData.photo || null;
+                        } else {
+                            names[otherParticipant] = "Unknown User";
+                            photos[otherParticipant] = null;
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user document:", error);
+                        names[otherParticipant] = "Unknown User";
+                        photos[otherParticipant] = null;
+                    }
+                }
+            }
+            setParticipantNames(names);
+            setParticipantPhotos(photos);
+        });
+
+        return () => unsubscribe();
+    }, [currentUser.hashtag]);
 
     const handleSearch = (query) => {
         setSearchQuery(query);
         if (query.trim() === "") {
-            setChatData(originalChatData); // Reset to the original chat data
+            setChatData(originalChatData);
         } else {
-            const filteredChats = originalChatData.filter((chat) =>
-                chat.participants[1].toLowerCase().includes(query.toLowerCase())
-            );
+            const filteredChats = originalChatData.filter((chat) => {
+                const otherParticipant = chat.participants.find(
+                    (participant) => participant !== currentUser.hashtag
+                );
+                const participantName = participantNames[otherParticipant] || "Unknown User";
+                return participantName.toLowerCase().includes(query.toLowerCase());
+            });
             setChatData(filteredChats);
         }
     };
@@ -30,7 +75,7 @@ export default function ChatScreen({route}) {
     const handleRemovePress = (chat) => {
         Alert.alert(
             "Delete Chat",
-            "Are you sure you want to delete this chat?",
+            "Are you sure you want to delete this chat? Every message will be removed for both users.",
             [
                 {
                     text: "Cancel",
@@ -39,47 +84,95 @@ export default function ChatScreen({route}) {
                 {
                     text: "Delete",
                     style: "destructive",
-                    onPress: () => {
-                        const updatedChatData = chatData.filter((item) => item.id !== chat.id);
-                        setChatData(updatedChatData);
-                        setOriginalChatData(updatedChatData); // Update the original chat data as well
+                    onPress: async () => {
+                        try {
+                            // Remove the chat from Firestore
+                            const chatRef = doc(db, "chats", chat.id);
+                            await deleteDoc(chatRef);
+
+                            // Update the local state
+                            const updatedChatData = chatData.filter((item) => item.id !== chat.id);
+                            setChatData(updatedChatData);
+                            setOriginalChatData(updatedChatData);
+                        } catch (error) {
+                            console.error("Error deleting chat:", error);
+                        }
                     },
                 },
             ]
         );
     };
 
-    const renderChatItem = ({item}) => (
-        <TouchableOpacity
-            style={styles.chatItem}
-            onPress={() => {
-                const updatedChatData = chatData.map((chat) =>
-                    chat.id === item.id ? {...chat, isRead: 1} : chat
-                );
-                setChatData(updatedChatData);
-                setOriginalChatData(updatedChatData); // Update the original chat data as well
-                navigation.navigate("ChatDetails", {chat: item});
-            }}
-        >
-            <View style={styles.chatInfo}>
-                <Image source={{uri: Image.resolveAssetSource(defaultAvatar).uri}} style={styles.avatar}/>
-                <View>
-                    <Text
-                        style={[
-                            styles.chatName,
-                            item.isRead === 0 && styles.unreadChatName,
-                        ]}
-                    >
-                        {fakeDB.users.find((u) => u.hashtag === item.hashtag)?.name}
-                    </Text>
-                    <Text style={styles.chatHashtag}>#{item.hashtag}</Text>
+    const renderChatItem = ({ item }) => {
+        const otherParticipant = item.participants.find(
+            (participant) => participant !== currentUser.hashtag
+        );
+
+        const isUnread = item.isRead && !item.isRead[currentUser.hashtag];
+
+        return (
+            <TouchableOpacity
+                style={styles.chatItem}
+                onPress={async () => {
+                    try {
+                        const chatRef = doc(db, "chats", item.id);
+                        await updateDoc(chatRef, {
+                            [`isRead.${currentUser.hashtag}`]: true,
+                        });
+
+                        const updatedChatData = chatData.map((chat) =>
+                            chat.id === item.id
+                                ? {
+                                      ...chat,
+                                      isRead: {
+                                          ...chat.isRead,
+                                          [currentUser.hashtag]: true,
+                                      },
+                                  }
+                                : chat
+                        );
+                        setChatData(updatedChatData);
+                        setOriginalChatData(updatedChatData);
+
+                        navigation.navigate("ChatDetails", {
+                            chat: {
+                                ...item,
+                                otherParticipantName: participantNames[otherParticipant] || "Unknown User",
+                                otherParticipantHashtag: otherParticipant,
+                            },
+                        });
+                    } catch (error) {
+                        console.error("Error updating chat as read:", error);
+                    }
+                }}
+            >
+                <View style={styles.chatInfo}>
+                    <Image
+                        source={{
+                            uri: participantPhotos[otherParticipant] || Image.resolveAssetSource(defaultAvatar).uri,
+                        }}
+                        style={styles.avatar}
+                    />
+                    <View>
+                        <Text
+                            style={[
+                                styles.chatName,
+                                isUnread && styles.unreadChatName,
+                            ]}
+                        >
+                            {String(participantNames[otherParticipant] || "Unknown User")}
+                        </Text>
+                        <Text style={styles.chatHashtag}>#{otherParticipant}</Text>
+                    </View>
                 </View>
-            </View>
-            <TouchableOpacity onPress={() => handleRemovePress(item)}>
-                <MaterialIcons name="delete" size={24} color="red"/>
+                <TouchableOpacity onPress={() => handleRemovePress(item)}>
+                    <MaterialIcons name="delete" size={24} color="red" />
+                </TouchableOpacity>
             </TouchableOpacity>
-        </TouchableOpacity>
-    );
+
+            
+        );
+    };
 
     return (
         <View style={defaultStyles.container}>
@@ -90,7 +183,7 @@ export default function ChatScreen({route}) {
                     value={searchQuery}
                     onChangeText={handleSearch}
                 />
-                <MaterialIcons name="search" size={24} color="gray"/>
+                <MaterialIcons name="search" size={24} color="gray" />
             </View>
             <FlatList
                 data={chatData}
@@ -98,6 +191,11 @@ export default function ChatScreen({route}) {
                 renderItem={renderChatItem}
                 contentContainerStyle={styles.chatList}
             />
+            <Button title="Debug Profile" onPress={
+                () => {
+                    navigation.navigate("Profile", { hashtag: "ben1" })}
+                } 
+        />
         </View>
     );
 }

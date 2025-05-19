@@ -1,3 +1,5 @@
+//sign_up_box.js
+import { db } from '../firebaseconfig'; 
 import React, {useState} from 'react';
 import {
     View,
@@ -11,17 +13,17 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import ScreenWrapper from './ScreenWrapper';
 import {isHashtagTaken} from '../data/fakeDB';
-import uuid from 'react-native-uuid';
 import {DEV_MODE} from '../config';
-import SHA256 from 'crypto-js/sha256';
-
-
+import { signOut } from 'firebase/auth'; 
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 const SignUpBox = () => {
+  
     const navigation = useNavigation();
     const [name, setName] = useState('');
     const [userHashtag, setUserHashtag] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [email, setEmail] = useState('');
 
     const validatePassword = (pass) => {
         const minLength = 8;
@@ -38,53 +40,78 @@ const SignUpBox = () => {
         );
     };
 
+    const validateEmail = (email) => {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(email.toLowerCase());
+    };
+    
     const handleSignUp = async () => {
-        if (!name || !userHashtag || !password || !confirmPassword) {
-            Alert.alert('Error', 'Please fill out all fields.');
-            return;
+        if (!name || !email || !userHashtag || !password || !confirmPassword) {
+          Alert.alert('Error', 'Please fill out all fields.');
+          return;
         }
-
+        if (!validateEmail(email)) {
+          Alert.alert('Invalid Email', 'Please enter a valid email address.');
+          return;
+        }
+      
         if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match.');
-            return;
+          Alert.alert('Error', 'Passwords do not match.');
+          return;
         }
-
+      
         if (!DEV_MODE && !validatePassword(password)) {
-            Alert.alert(
-                'Weak Password',
-                'Password must be at least 8 characters long and include an uppercase letter, lowercase letter, number, and special character.'
-            );
-            return;
+          Alert.alert(
+            'Weak Password',
+            'Password must be at least 8 characters long and include an uppercase letter, lowercase letter, number, and special character.'
+          );
+          return;
         }
-
-        const alreadyExists = isHashtagTaken(userHashtag);
-        if (alreadyExists) {
-            Alert.alert('Error', 'That hashtag is already taken.');
+      
+        // 🔍 Check if hashtag is already taken
+        try {
+          const hashtagDoc = await getDoc(doc(db, 'hashtags', userHashtag));
+          if (hashtagDoc.exists()) {
+            Alert.alert('Hashtag Taken', 'That hashtag is already taken. Please choose another.');
             return;
+          }
+        } catch (error) {
+          console.error('❌ Error checking hashtag uniqueness:', error);
+          Alert.alert('Error', 'Something went wrong checking hashtag uniqueness.');
+          return;
         }
-
-        const hashedPassword = SHA256(password).toString();
-
+      
+        // 🔍 Check if email is already in use
+        try {
+          const q = query(collection(db, 'users'), where('email', '==', email));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            Alert.alert('Email Taken', 'That email is already registered. Try logging in or using a different one.');
+            return;
+          }
+        } catch (error) {
+          console.error('❌ Error checking email uniqueness:', error);
+          Alert.alert('Error', 'Something went wrong checking email uniqueness.');
+          return;
+        }
+      
         const newUser = {
-            id: uuid.v4(),
-            name,
-            hashtag: userHashtag,
-            password: hashedPassword,
-            photo: '',
-            profiles: [],
-            roles: [],
-            groups: [],
-            availabilities: [],
-            chats: [],
-            notifications: []
+          name,
+          email,
+          hashtag: userHashtag,
+          password,
+          photo: '',
+          roles: [],
+          groups: [],
         };
-
-
+      
         Keyboard.dismiss();
         setTimeout(() => {
-            navigation.navigate('ProfilePicture', newUser);
+          navigation.navigate('ProfilePicture', newUser);
         }, 100);
-    };
+      };
+      
+
 
     return (
         <ScreenWrapper>
@@ -97,7 +124,15 @@ const SignUpBox = () => {
                         value={name}
                         onChangeText={setName}
                     />
-
+                      <Text style={styles.label}>Email</Text>
+                      <TextInput
+                          style={styles.input}
+                          placeholder="Enter Email"
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          value={email}
+                          onChangeText={setEmail}
+                      />
                     <Text style={styles.label}>User Hashtag</Text>
                     <TextInput
                         style={styles.input}

@@ -1,4 +1,4 @@
-import React, {useLayoutEffect} from 'react';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
 import {
     View,
     Text,
@@ -9,51 +9,35 @@ import {
     Platform,
     Alert,
     ToastAndroid,
-    Linking
+    Linking,
 } from 'react-native';
-import MapView, {Marker, Circle} from 'react-native-maps';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import CalendarIcon from '../assets/Calendar.png';
-import {getUser} from '../data/fakeDB';
 
-export default function StudentAvailabilityDetailsScreen({route, navigation}) {
-    const {user: originalUser, availabilityIndex} = route.params;
-    const user = getUser(originalUser.hashtag);
-    const availability = user.availabilities?.[availabilityIndex];
-
-    useLayoutEffect(() => {
-        navigation.setOptions({headerShown: false});
-    }, [navigation]);
+export default function StudentAvailabilityDetailsScreen({ route, navigation }) {
+    const { availability } = route.params; // Receive the availability object directly
 
     if (!availability) {
-        console.warn(' Invalid availability index or deleted entry:', availabilityIndex);
-
-        if (Platform.OS === 'android') {
-            ToastAndroid.show('This availability no longer exists.', ToastAndroid.SHORT);
-        } else {
-            Alert.alert('Not Found', 'This availability no longer exists.');
-        }
-
-        setTimeout(() => {
-            navigation.navigate('AvailabilityMain');
-        }, 0);
-
-        return null;
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <Text style={{ color: "red", fontSize: 16 }}>Availability not found.</Text>
+            </View>
+        );
     }
 
     const daysOfWeek = [
-        {label: 'S', full: 'Sunday'},
-        {label: 'M', full: 'Monday'},
-        {label: 'T', full: 'Tuesday'},
-        {label: 'W', full: 'Wednesday'},
-        {label: 'T', full: 'Thursday'},
-        {label: 'F', full: 'Friday'},
-        {label: 'S', full: 'Saturday'}
+        { label: "S", full: "Sunday" },
+        { label: "M", full: "Monday" },
+        { label: "T", full: "Tuesday" },
+        { label: "W", full: "Wednesday" },
+        { label: "T", full: "Thursday" },
+        { label: "F", full: "Friday" },
+        { label: "S", full: "Saturday" },
     ];
 
     return (
-        <SafeAreaView style={{flex: 1}}>
+        <SafeAreaView style={{ flex: 1 }}>
             <ScrollView contentContainerStyle={styles.container}>
-
                 <Text style={styles.label}>Role</Text>
                 <Text style={styles.readOnlyField}>{availability.roleHashtag}</Text>
 
@@ -63,20 +47,20 @@ export default function StudentAvailabilityDetailsScreen({route, navigation}) {
                 <View style={styles.rowBetween}>
                     <View style={styles.timeInputWrapper}>
                         <Text style={styles.label}>From</Text>
-                        <Text style={styles.readOnlyField}>{availability.time.split(' - ')[0]}</Text>
+                        <Text style={styles.readOnlyField}>{availability.time.split(" - ")[0]}</Text>
                     </View>
                     <View style={styles.timeInputWrapper}>
                         <Text style={styles.label}>To</Text>
-                        <Text style={styles.readOnlyField}>{availability.time.split(' - ')[1]}</Text>
+                        <Text style={styles.readOnlyField}>{availability.time.split(" - ")[1]}</Text>
                     </View>
                 </View>
 
                 {!availability.repeats && (
-                    <View style={[styles.iconRow, {marginBottom: 20}]}>
-                        <Image source={CalendarIcon} style={styles.calendarIcon}/>
-                        <View style={[styles.readOnlyField, {flex: 1}]}>
-                            <Text style={{fontSize: 16, color: '#000', textAlign: 'center'}}>
-                                {availability.date.replace(/-/g, '/')}
+                    <View style={[styles.iconRow, { marginBottom: 20 }]}>
+                        <Image source={CalendarIcon} style={styles.calendarIcon} />
+                        <View style={[styles.readOnlyField, { flex: 1 }]}>
+                            <Text style={{ fontSize: 16, color: "#000", textAlign: "center" }}>
+                                {availability.date ? availability.date.replace(/-/g, "/") : "No specific date"}
                             </Text>
                         </View>
                     </View>
@@ -84,19 +68,20 @@ export default function StudentAvailabilityDetailsScreen({route, navigation}) {
 
                 {availability.repeats && (
                     <View style={styles.iconRow}>
-                        <Image source={CalendarIcon} style={styles.calendarIcon}/>
-                        <View style={{flexDirection: 'row', flexWrap: 'wrap', flex: 1}}>
+                        <Image source={CalendarIcon} style={styles.calendarIcon} />
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", flex: 1 }}>
                             {daysOfWeek.map((dayObj) => {
-                                const isActive = availability.days.includes(dayObj.full);
+                                const isActive = availability.days?.includes(dayObj.full);
                                 return (
-                                    <View
+                                    <Text
                                         key={dayObj.full}
-                                        style={[styles.dayButton, isActive && styles.activeDayButton]}
+                                        style={[
+                                            styles.dayLabel,
+                                            isActive ? styles.activeDayLabel : styles.inactiveDayLabel,
+                                        ]}
                                     >
-                                        <Text style={[styles.dayButtonText, isActive && styles.activeDayButtonText]}>
-                                            {dayObj.label}
-                                        </Text>
-                                    </View>
+                                        {dayObj.label}
+                                    </Text>
                                 );
                             })}
                         </View>
@@ -105,33 +90,45 @@ export default function StudentAvailabilityDetailsScreen({route, navigation}) {
 
                 <Text style={styles.label}>Where?</Text>
                 <View style={styles.iconRow}>
-                    <View style={{flex: 1}}>
+                    <View style={{ flex: 1 }}>
                         <View style={styles.radioOption}>
                             <View
-                                style={[styles.radioCircle, availability.locationType === 'onSite' && styles.selected]}/>
-                            <Text style={{
-                                color: availability.locationType === 'onSite' ? '#7C0152' : '#333',
-                                fontWeight: 'bold'
-                            }}>
+                                style={[
+                                    styles.radioCircle,
+                                    availability.locationType === "onSite" && styles.selected,
+                                ]}
+                            />
+                            <Text
+                                style={{
+                                    color: availability.locationType === "onSite" ? "#7C0152" : "#333",
+                                    fontWeight: "bold",
+                                }}
+                            >
                                 On Site
                             </Text>
                         </View>
                     </View>
-                    <View style={{flex: 1, alignItems: 'flex-end'}}>
+                    <View style={{ flex: 1, alignItems: "flex-end" }}>
                         <View style={styles.radioOption}>
                             <View
-                                style={[styles.radioCircle, availability.locationType === 'remote' && styles.selected]}/>
-                            <Text style={{
-                                color: availability.locationType === 'remote' ? '#7C0152' : '#333',
-                                fontWeight: 'bold'
-                            }}>
+                                style={[
+                                    styles.radioCircle,
+                                    availability.locationType === "remote" && styles.selected,
+                                ]}
+                            />
+                            <Text
+                                style={{
+                                    color: availability.locationType === "remote" ? "#7C0152" : "#333",
+                                    fontWeight: "bold",
+                                }}
+                            >
                                 Remote
                             </Text>
                         </View>
                     </View>
                 </View>
 
-                {availability.locationType === 'onSite' && (
+                {availability.locationType === "onSite" && (
                     <>
                         <Text style={styles.label}>Location details</Text>
                         <MapView
@@ -145,7 +142,7 @@ export default function StudentAvailabilityDetailsScreen({route, navigation}) {
                             <Marker
                                 coordinate={availability.coordinates}
                                 onPress={() => {
-                                    navigation.navigate('LocationDetails', {
+                                    navigation.navigate("LocationDetails", {
                                         coordinates: availability.coordinates,
                                         radius: availability.radius,
                                     });
@@ -175,7 +172,7 @@ export default function StudentAvailabilityDetailsScreen({route, navigation}) {
                             return (
                                 <Text
                                     key={index}
-                                    style={{color: '#7C0152', textDecorationLine: 'underline'}}
+                                    style={{ color: "#7C0152", textDecorationLine: "underline" }}
                                     onPress={() => Linking.openURL(part)}
                                 >
                                     {part}

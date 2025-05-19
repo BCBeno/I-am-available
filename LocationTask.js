@@ -1,124 +1,170 @@
+//LocationTask.js
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {getUser} from './data/fakeDB';
-import {DEV_MODE} from './config';
+import { DEV_MODE } from './config';
+import { db } from './firebaseconfig';
+import { doc, updateDoc,getDoc } from 'firebase/firestore';
 
 const TASK_NAME = 'CHECK_AVAILABILITY_IN_RADIUS';
 
-///LOCATION BASED NOTIFICATIONS DO NOT WORK (finding out if the user is within the designated Radius works but the push notifications do not work)
+let currentHashtag = null;
 
-// Extracted function for reusability
 export async function runAvailabilityCheck() {
-    try {
-        console.log('📍 Running availability check');
+  if (!currentHashtag) return console.warn("⚠️ No hashtag for location check");
 
-        const location = await Location.getCurrentPositionAsync({});
-        const user = getUser(global.loggedInUserHashtag);
-        const now = new Date();
+  try {
+    console.log('📍 Running availability check');
 
-        const notified = JSON.parse(await AsyncStorage.getItem('notifiedAvailabilities') || '{}');
+    const userDoc = await getDoc(doc(db, 'users', currentHashtag));
+    const user = userDoc.exists() ? userDoc.data() : null;
+    if (!user) return console.warn("⚠️ Failed to fetch user data from Firestore");
 
-        for (const availability of user.availabilities || []) {
-            console.log('🔍 Availability:', availability);
+    const location = await Location.getCurrentPositionAsync({});
+    if (!location?.coords) {
+      console.warn("⚠️ No location data available.");
+      return;
+    }
 
-            if (availability.locationType !== 'onSite') {
-                console.log('⛔ Skipping: Not on-site');
-                continue;
-            }
-            if (availability.repeats === false) {
-                const [sh, sm] = availability.time.split(' - ')[0].split(':');
-                const fullDateTime = new Date(availability.date);
-                fullDateTime.setHours(parseInt(sh), parseInt(sm), 0, 0);
+    const now = new Date();
+    const weekdayName = now.toLocaleDateString('en-US', { weekday: 'long' });
 
-                if (fullDateTime < now) {
-                    console.log('⛔ Skipping: One-time and already in the past');
-                    continue;
-                }
-            }
+    const notified = JSON.parse(await AsyncStorage.getItem('notifiedAvailabilities') || '{}');
 
-            if (user.settings?.locationRemindersEnabled === false) {
-                console.log('⛔ Skipping: Location reminders turned off in settings');
-                continue;
-            }
+    for (const availability of user.availabilities || []) {
+      if (availability.locationType !== 'onSite') continue;
 
-            const {latitude, longitude} = location.coords;
-            const target = availability.coordinates;
+      if (!availability.coordinates?.latitude || !availability.coordinates?.longitude) {
+        console.warn("⚠️ Skipping availability with invalid coordinates");
+        continue;
+      }
 
-            const distance = getDistanceFromLatLonInMeters(
-                latitude, longitude, target.latitude, target.longitude
-            );
+      const [startTimeStr, endTimeStr] = availability.time.split(' - ');
+      const [sh, sm] = startTimeStr.split(':').map(Number);
+      const [eh, em] = endTimeStr.split(':').map(Number);
 
-            const [startTimeStr] = availability.time.split(' - ');
-            const start = new Date();
-            const [sh, sm] = startTimeStr.split(':');
-            start.setHours(parseInt(sh), parseInt(sm), 0, 0);
+      const start = new Date();
+      start.setHours(sh, sm, 0, 0);
+      const end = new Date();
+      end.setHours(eh, em, 0, 0);
 
-            const diff = start - now;
-            const isWithinTime = diff > 0 && diff <= (DEV_MODE ? 2 * 60 * 1000 : 5 * 60 * 1000);
+      const nowDateStr = now.toISOString().split('T')[0];
+      const key = `${availability.id || availability.group}-${nowDateStr}`;
 
-            const key = availability.id || `${availability.group}-${startTimeStr}`;
+      let isMatch = false;
+      if (availability.repeats) {
+        isMatch = availability.days?.includes(weekdayName);
+      } else if (availability.date === nowDateStr) {
+        isMatch = true;
+      }
 
-            console.log(`📅 Checking: "${availability.complement}" for group #${availability.group}`);
-            console.log(`📏 Distance: ${Math.round(distance)}m, ⏱️ Time diff: ${Math.round(diff / 60000)} min`);
+      if (!isMatch) continue;
 
-            if (distance <= availability.radius && isWithinTime && !notified[key]) {
-                console.log('✅ User is within radius & time window — sending notification');
+      const diff = start - now;
+      const isWithinTime = diff > -5 * 60 * 1000 && diff <= (DEV_MODE ? 2 * 60 * 1000 : 5 * 60 * 1000);
+      if (!isWithinTime) continue;
 
-                await Notifications.scheduleNotificationAsync({
-                    content: {
-                        title: '⏰ Heads up!',
-                        body: `📍 In ${DEV_MODE ? '2' : '5'} mins: "${availability.complement}" with group #${availability.group}`,
-                    },
-                    trigger: null,
-                });
+      if (user.settings?.locationRemindersEnabled === false) continue;
 
-                notified[key] = true;
-            }
+      const { latitude, longitude } = location.coords;
+      const target = availability.coordinates;
+      const distance = getDistanceFromLatLonInMeters(
+        latitude, longitude, target.latitude, target.longitude
+      );
+
+      if (availability.isavailable && now > end) {
+        try {
+          await updateDoc(doc(db, 'availabilities', availability.id), { isavailable: false });
+          await updateDoc(doc(db, 'groups', availability.group), { owneravailable: false });
+          console.log(`🔁 Reset expired availability for group ${availability.group}`);
+        } catch (err) {
+          console.error("❌ Failed to auto-reset expired availability:", err);
+        }
+        continue;
+      }
+
+      if (distance <= availability.radius && !notified[key]) {
+        console.log(`✅ Available: ${availability.complement} in group ${availability.group}`);
+
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '⏰ Heads up!',
+            body: `📍 "${availability.complement}" starts soon in group ${availability.group}`,
+          },
+          trigger: null,
+        });
+
+        notified[key] = true;
+
+        try {
+          if (availability.id) {
+            await updateDoc(doc(db, 'availabilities', availability.id), { isavailable: true });
+          }
+          await updateDoc(doc(db, 'groups', availability.group), { owneravailable: true });
+        } catch (err) {
+          console.error("❌ Failed to update Firestore:", err);
         }
 
-        await AsyncStorage.setItem('notifiedAvailabilities', JSON.stringify(notified));
-
-    } catch (error) {
-        console.error('❌ Availability check error:', error);
+        const resetDelay = end - now + 60 * 1000;
+        if (resetDelay > 0) {
+          setTimeout(async () => {
+            try {
+              console.log(`⏳ Resetting availability for group ${availability.group}`);
+              await updateDoc(doc(db, 'groups', availability.group), { owneravailable: false });
+              if (availability.id) {
+                await updateDoc(doc(db, 'availabilities', availability.id), { isavailable: false });
+              }
+              delete notified[key];
+              await AsyncStorage.setItem('notifiedAvailabilities', JSON.stringify(notified));
+            } catch (err) {
+              console.error('❌ Failed to reset availability status:', err);
+            }
+          }, resetDelay);
+        }
+      }
     }
-}
 
+    await AsyncStorage.setItem('notifiedAvailabilities', JSON.stringify(notified));
+  } catch (error) {
+    console.error('❌ Availability check error:', error);
+  }
+}
 
 TaskManager.defineTask(TASK_NAME, runAvailabilityCheck);
 
-export async function startBackgroundAvailabilityTask() {
-    const {status: fgStatus} = await Location.requestForegroundPermissionsAsync();
-    const {status: bgStatus} = await Location.requestBackgroundPermissionsAsync();
-    if (fgStatus !== 'granted' || bgStatus !== 'granted') return;
+export async function startBackgroundAvailabilityTask(hashtag) {
+  currentHashtag = hashtag;
+  console.log("🔄 Starting background location task setup...");
+  const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+  const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+  if (fgStatus !== 'granted' || bgStatus !== 'granted') return;
 
-    const hasStarted = await TaskManager.isTaskRegisteredAsync(TASK_NAME);
-    if (!hasStarted) {
-        await Location.startLocationUpdatesAsync(TASK_NAME, {
-            accuracy: Location.Accuracy.High,
-            timeInterval: DEV_MODE ? 10 * 1000 : 5 * 60 * 1000,
-            distanceInterval: 0,
-            showsBackgroundLocationIndicator: false,
-            foregroundService: {
-                notificationTitle: 'Location Active',
-                notificationBody: 'Monitoring your availability zones...'
-            },
-        });
-    }
+  const hasStarted = await TaskManager.isTaskRegisteredAsync(TASK_NAME);
+  if (!hasStarted) {
+    await Location.startLocationUpdatesAsync(TASK_NAME, {
+      accuracy: Location.Accuracy.High,
+      timeInterval: DEV_MODE ? 5000 : 5 * 60 * 1000,
+      distanceInterval: 0,
+      showsBackgroundLocationIndicator: false,
+      foregroundService: {
+        notificationTitle: 'Location Active',
+        notificationBody: 'Monitoring your availability zones...'
+      },
+    });
+  }
 }
 
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-    const R = 6371e3;
-    const φ1 = (lat1 * Math.PI) / 180;
-    const φ2 = (lat2 * Math.PI) / 180;
-    
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+  const R = 6371e3;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
 
-    const a = Math.sin(Δφ / 2) ** 2 +
-        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const a = Math.sin(Δφ / 2) ** 2 +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c;
+  return R * c;
 }
