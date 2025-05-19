@@ -90,7 +90,7 @@ export default function AvailabilityScreen({user, navigation, route, refreshTrig
             }}/>
             <View style={styles.container}>
                 <FlatList
-                    data={availabilities} // ✅ was `availability` (undefined)
+                    data={availabilities} 
                     keyExtractor={(_, index) => index.toString()}
                     renderItem={renderItem}
                     contentContainerStyle={{paddingBottom: 100}}
