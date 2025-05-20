@@ -14,12 +14,6 @@ export default function GroupScreen() {
     const dispatch = useDispatch();
     const user = useSelector(state => state.user.data);
     const groups = useSelector(state => state.groups.items);
-
-    // Load user data
-    useEffect(() => {
-        dispatch(fetchUser('lucasalopes'));
-    }, [dispatch]);
-
     // When user.groups changes, fetch only those groups
     useEffect(() => {
         if (user?.groups?.length > 0) {

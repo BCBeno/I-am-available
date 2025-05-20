@@ -1,5 +1,5 @@
 //MainTabNavigator.js
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
 import NotificationNavigator from './/NotificationNavigator';
@@ -8,6 +8,9 @@ import BottomBar from '../components/BottomBar';
 import ProfileFlow from './/ProfileFlow';
 import AvailabilityNavigator from './AvailabilityNavigator';
 import GroupStack from "../screens/group/GroupStack";
+import {useDispatch} from "react-redux";
+import {fetchUser} from "../redux/slices/userSlice";
+import GroupDetailsScreen from "../screens/group/GroupDetailsScreen";
 
 const Tab = createBottomTabNavigator();
 const RootStack = createStackNavigator();
@@ -25,7 +28,7 @@ function Tabs({user, setLoggedInUser}) {
                     setLoggedInUser={setLoggedInUser}
                     onTabChange={(name) => {
                         if (name === 'Availability') {
-                            setRefreshTrigger((prev) => prev + 1); 
+                            setRefreshTrigger((prev) => prev + 1);
                         }
                     }}
                 />
@@ -36,12 +39,12 @@ function Tabs({user, setLoggedInUser}) {
             <Tab.Screen name="Availability" key={refreshTrigger}>
                 {() => (
                     <AvailabilityNavigator
-                    user={user}
-                    setLoggedInUser={setLoggedInUser}
-                    refreshTrigger={refreshTrigger}
+                        user={user}
+                        setLoggedInUser={setLoggedInUser}
+                        refreshTrigger={refreshTrigger}
                     />
                 )}
-                </Tab.Screen>
+            </Tab.Screen>
 
 
             <Tab.Screen name="Notifications">{() => <NotificationNavigator user={user}/>}</Tab.Screen>
@@ -54,26 +57,35 @@ function Tabs({user, setLoggedInUser}) {
 }
 
 export default function MainTabNavigator({user, setLoggedInUser}) {
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        if (user) {
+            dispatch(fetchUser(user.hashtag));
+        }
+    }, [dispatch, user]);
+
     return (
         <RootStack.Navigator screenOptions={{headerShown: false}}>
             <RootStack.Screen name="Tabs">
-            {() => (
-                <Tabs
-                key={user?.photo} //  This forces remount when photo changes
-                user={user}
-                setLoggedInUser={setLoggedInUser}
-                />
-            )}
-            </RootStack.Screen>
-            <RootStack.Screen name="ProfileFlow">
-                {({ route }) => (
-                    <ProfileFlow
-                    route={route}               
-                    user={user}
-                    setLoggedInUser={setLoggedInUser}
+                {() => (
+                    <Tabs
+                        key={user?.photo} //  This forces remount when photo changes
+                        user={user}
+                        setLoggedInUser={setLoggedInUser}
                     />
                 )}
-                </RootStack.Screen>
+            </RootStack.Screen>
+            <RootStack.Screen name="ProfileFlow">
+                {({route}) => (
+                    <ProfileFlow
+                        route={route}
+                        user={user}
+                        setLoggedInUser={setLoggedInUser}
+                    />
+                )}
+            </RootStack.Screen>
+            <RootStack.Screen name="GroupDetails" component={GroupDetailsScreen}/>
         </RootStack.Navigator>
     );
 }
