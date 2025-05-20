@@ -1,3 +1,4 @@
+//LocationDetailsScreen.js
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';

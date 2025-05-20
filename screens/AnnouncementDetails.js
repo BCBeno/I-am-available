@@ -21,7 +21,7 @@ const AnnouncementDetails = () => {
       <View style={defaultStyles.bigCard}>
         <Text style={defaultStyles.title}>{notification.title}</Text>
         <Text style={defaultStyles.groupName}>{notification.subject}</Text>
-        <Text style={defaultStyles.groupId}>{notification.group}</Text>
+        <Text style={defaultStyles.groupId}>{notification.group.startsWith("/groups/") ? `#${notification.group.split("/").pop()}` : notification.group}</Text>
         <ScrollView showsVerticalScrollIndicator={false}
         >
           <Text style={defaultStyles.announcement}>

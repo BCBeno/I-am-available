@@ -1,3 +1,4 @@
+//MainTabNavigator.js
 import React, {useState} from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
@@ -6,8 +7,6 @@ import ChatNavigator from './/ChatNavigator';
 import BottomBar from '../components/BottomBar';
 import ProfileFlow from './/ProfileFlow';
 import AvailabilityNavigator from './AvailabilityNavigator';
-import {getUser} from '../data/fakeDB';
-import GroupScreen from "../screens/group/GroupScreen";
 import GroupStack from "../screens/group/GroupStack";
 
 const Tab = createBottomTabNavigator();
@@ -26,9 +25,7 @@ function Tabs({user, setLoggedInUser}) {
                     setLoggedInUser={setLoggedInUser}
                     onTabChange={(name) => {
                         if (name === 'Availability') {
-                            const fresh = getUser(user.hashtag);
-                            setLoggedInUser(fresh);
-                            setRefreshTrigger((prev) => prev + 1);
+                            setRefreshTrigger((prev) => prev + 1); 
                         }
                     }}
                 />
@@ -36,9 +33,16 @@ function Tabs({user, setLoggedInUser}) {
         >
             <Tab.Screen name="Groups">{() => <GroupStack/>}</Tab.Screen>
 
-            <Tab.Screen name="Availability">
-                {() => <AvailabilityNavigator user={user} refreshTrigger={refreshTrigger}/>}
-            </Tab.Screen>
+            <Tab.Screen name="Availability" key={refreshTrigger}>
+                {() => (
+                    <AvailabilityNavigator
+                    user={user}
+                    setLoggedInUser={setLoggedInUser}
+                    refreshTrigger={refreshTrigger}
+                    />
+                )}
+                </Tab.Screen>
+
 
             <Tab.Screen name="Notifications">{() => <NotificationNavigator user={user}/>}</Tab.Screen>
 
@@ -53,11 +57,23 @@ export default function MainTabNavigator({user, setLoggedInUser}) {
     return (
         <RootStack.Navigator screenOptions={{headerShown: false}}>
             <RootStack.Screen name="Tabs">
-                {() => <Tabs user={user} setLoggedInUser={setLoggedInUser}/>}
+            {() => (
+                <Tabs
+                key={user?.photo} //  This forces remount when photo changes
+                user={user}
+                setLoggedInUser={setLoggedInUser}
+                />
+            )}
             </RootStack.Screen>
             <RootStack.Screen name="ProfileFlow">
-                {() => <ProfileFlow user={user} setLoggedInUser={setLoggedInUser}/>}
-            </RootStack.Screen>
+                {({ route }) => (
+                    <ProfileFlow
+                    route={route}               
+                    user={user}
+                    setLoggedInUser={setLoggedInUser}
+                    />
+                )}
+                </RootStack.Screen>
         </RootStack.Navigator>
     );
 }

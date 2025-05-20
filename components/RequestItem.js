@@ -6,14 +6,18 @@ import { MaterialIcons } from "@expo/vector-icons";
 const RequestItem = ({ user, onStatusChange }) => {
   const [status, setStatus] = useState(null);
 
-  const handlePress = (newStatus) => {
-    setStatus(newStatus); 
-    onStatusChange(user.id, newStatus); 
+  const handlePress = (action) => {
+    setStatus(action); 
+    onStatusChange(user.hashtag, action); // Call the function with the user's hashtag and action
   };
 
   const handleUserPress = () => {
-    Alert.alert("User Info", `Name: ${user.name}\nHashtag: #${user.hashtag}\nMessage: ${user.message}`, [{text: "OK"}]);
-  }
+    Alert.alert(
+      "User Info",
+      `Name: ${user.name}\nHashtag: #${user.hashtag}\nMessage: ${user.message}`,
+      [{ text: "OK" }]
+    );
+  };
 
   if (status) {
     return null;
@@ -31,13 +35,13 @@ const RequestItem = ({ user, onStatusChange }) => {
 
       <View style={defaultStyles.buttons}>
         <TouchableOpacity
-          onPress={() => handlePress("accepted")}
+          onPress={() => handlePress("accepted")} // Pass "accepted" action
           style={defaultStyles.acceptBtn}
         >
           <MaterialIcons name="check-box" size={28} color="green" />
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => handlePress("rejected")}
+          onPress={() => handlePress("rejected")} // Pass "rejected" action
           style={defaultStyles.rejectBtn}
         >
           <MaterialIcons name="disabled-by-default" size={28} color="red" />
