@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, useEffect, useRef} from "react";
 import {
     View,
     Text,
@@ -6,29 +6,122 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
-    KeyboardAvoidingView,
-    Platform,
-    Image
+    Image,
 } from "react-native";
+import {db} from "../firebaseconfig";
+import {collection, addDoc, query, orderBy, onSnapshot, doc, getDoc, arrayUnion, updateDoc, setDoc} from "firebase/firestore";
 import defaultAvatar from "../assets/default-avatar.png";
 import fakeDB from "../data/fakeDB";
 
 export default function ChatDetailsScreen({route, navigation}) {
     const {chat} = route.params;
+    const {currentUser} = route.params;
     const [newMessage, setNewMessage] = useState("");
-    const [messages, setMessages] = useState(chat.messages);
+    const [messages, setMessages] = useState([]);
+    const [otherParticipantPhoto, setOtherParticipantPhoto] = useState(null);
+    const [loadingPhoto, setLoadingPhoto] = useState(true);
+
+    const flatListRef = useRef(null);
+
+    useEffect(() => {
+        const fetchOtherParticipantPhoto = async () => {
+            try {
+                const userRef = doc(db, "users", chat.otherParticipantHashtag);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    setOtherParticipantPhoto(userSnap.data().photo || null);
+                } else {
+                    console.error("No such user document!");
+                }
+            } catch (error) {
+                console.error("Error fetching user document:", error);
+            } finally {
+                setLoadingPhoto(false);
+            }
+        };
+
+        fetchOtherParticipantPhoto();
+    }, [chat.otherParticipantHashtag]);
+
+    useEffect(() => {
+        const chatRef = doc(db, "chats", chat.id);
+
+        const unsubscribe = onSnapshot(chatRef, (chatSnap) => {
+            if (chatSnap.exists()) {
+                const chatData = chatSnap.data();
+                setMessages(chatData.messages || []);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [chat.id]);
+
+    useEffect(() => {
+        if (flatListRef.current && messages.length > 0) {
+            flatListRef.current.scrollToEnd({animated: false});
+        }
+    }, [messages]);
+
+    useEffect(() => {
+        const initializeChat = async () => {
+            try {
+                const chatRef = doc(db, "chats", chat.id);
+                const chatSnap = await getDoc(chatRef);
+
+                if (!chatSnap.exists()) {
+                    await setDoc(chatRef, {
+                        id: chat.id,
+                        participants: [currentUser.hashtag, chat.otherParticipantHashtag],
+                        messages: [],
+                        isRead: {
+                            [currentUser.hashtag]: true,
+                            [chat.otherParticipantHashtag]: false,
+                        },
+                    });
+                    console.log("New chat created!");
+                }
+            } catch (error) {
+                console.error("Error initializing chat:", error);
+            }
+        };
+
+        initializeChat();
+    }, [chat.id, currentUser.hashtag, chat.otherParticipantHashtag]);
+
+    const handleSend = async () => {
+        if (newMessage.trim() === "") return;
+
+        const message = {
+            sender: currentUser.hashtag,
+            text: newMessage,
+            timestamp: new Date().toISOString(),
+        };
+
+        try {
+            const chatRef = doc(db, "chats", chat.id);
+
+            await updateDoc(chatRef, {
+                messages: arrayUnion(message),
+                [`isRead.${chat.otherParticipantHashtag}`]: false,
+            });
+
+            setNewMessage("");
+        } catch (error) {
+            console.error("Error sending message: ", error);
+        }
+    };
 
     const renderMessage = ({item}) => (
         <View
             style={[
                 styles.messageContainer,
-                item.sender === chat.participants[0] ? styles.sentMessage : styles.receivedMessage,
+                item.sender === currentUser.hashtag ? styles.sentMessage : styles.receivedMessage,
             ]}
         >
             <Text
                 style={[
                     styles.messageText,
-                    item.sender !== chat.participants[0] && styles.receivedMessageText,
+                    item.sender !== currentUser.hashtag && styles.receivedMessageText,
                 ]}
             >
                 {item.text}
@@ -36,42 +129,36 @@ export default function ChatDetailsScreen({route, navigation}) {
         </View>
     );
 
-    const handleSend = () => {
-        if (newMessage.trim() === "") return;
-
-        const message = {
-            sender: chat.participants[0],
-            text: newMessage,
-            timestamp: new Date().toISOString(),
-        };
-
-        setMessages([...messages, message]);
-        setNewMessage("");
-    };
-
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Image source={{uri: Image.resolveAssetSource(defaultAvatar).uri}} style={styles.avatar}/>
+                <Image
+                    source={{
+                        uri: otherParticipantPhoto || Image.resolveAssetSource(defaultAvatar).uri,
+                    }}
+                    style={styles.avatar}
+                />
                 <View>
                     <TouchableOpacity
                         onPress={() =>
-                            navigation.navigate("Profile", {hashtag: chat.hashtag})
+                            navigation.navigate("Profile", {hashtag: chat.otherParticipantHashtag})
                         }
                     >
-                        <Text
-                            style={styles.chatName}>{fakeDB.users.find((u) => u.hashtag === chat.hashtag)?.name}</Text>
+                        <Text style={styles.chatName}>{chat.otherParticipantName}</Text>
                     </TouchableOpacity>
-                    <Text style={styles.chatHashtag}>#{chat.hashtag}</Text>
+                    <Text style={styles.chatHashtag}>#{chat.otherParticipantHashtag}</Text>
                 </View>
             </View>
 
             <View style={{flex: 1}}>
                 <FlatList
+                    ref={flatListRef}
                     data={messages}
-                    keyExtractor={(item, index) => index.toString()}
+                    keyExtractor={(item, index) => `${item.timestamp}-${index}`}
                     renderItem={renderMessage}
                     contentContainerStyle={styles.messagesList}
+                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                    onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
                 />
 
                 <View style={styles.inputContainer}>

@@ -1,11 +1,12 @@
-import {initializeApp} from "firebase/app";
-import {getDatabase} from 'firebase/database';
+import {getApp, getApps, initializeApp} from "firebase/app";
 import {getFirestore} from 'firebase/firestore';
+import {getReactNativePersistence, initializeAuth} from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
     apiKey: "AIzaSyA3RpZNMigoAwN8NnGRbJ5o3YKIHarSImI",
     authDomain: "i-am-available.firebaseapp.com",
-    databaseURL: "https://i-am-available-default-rtdb.firebaseio.com/", // ← Add this
+    databaseURL: "https://i-am-available-default-rtdb.firebaseio.com/",
     projectId: "i-am-available",
     storageBucket: "i-am-available.appspot.com",
     messagingSenderId: "1007358203617",
@@ -13,7 +14,15 @@ const firebaseConfig = {
     measurementId: "G-YXB4YJQLR7"
 };
 
-const app = initializeApp(firebaseConfig);
+//  Initialize Firebase app once
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
+//  Always use initializeAuth (never getAuth)
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
+
+//  Firestore setup
 const db = getFirestore(app);
 
-export {app, db};
+export { app, db, auth };
