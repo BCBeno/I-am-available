@@ -22,6 +22,7 @@ export default function NewGroupForm({onClose, edit, group}) {
     const [autoAdmission, setAutoAdmission] = useState(group?.autoAdmission ?? false);
     const [selectedRole, setSelectedRole] = useState(group?.ownerRoleHashtag ?? '');
     const [groupMembers, setGroupMembers] = useState([]);
+    const [joinRequests, setJoinRequests] = useState(group?.joinRequests ?? []);
 
     useEffect(() => {
         if (edit) {
@@ -51,6 +52,7 @@ export default function NewGroupForm({onClose, edit, group}) {
             ownerId: user.hashtag,
             ownerRoleHashtag: selectedRole,
             ownerAvailable: false,
+            joinRequests: joinRequests,
         };
 
         try {
