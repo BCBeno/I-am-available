@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
-import { ScrollView } from "react-native-gesture-handler";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../firebaseconfig";
+import React, {useState, useEffect} from "react";
+import {View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator} from "react-native";
+import {MaterialIcons} from "@expo/vector-icons";
+import {ScrollView} from "react-native-gesture-handler";
+import {doc, getDoc, collection, query, where, getDocs} from "firebase/firestore";
+import {db} from "../firebaseconfig";
 import defaultAvatar from "../assets/default-avatar.png";
 
-export default function ProfileScreen({ route, navigation }) {
-    const { hashtag, currentUser } = route.params; // Retrieve currentUser from route.params
+export default function ProfileScreen({route, navigation}) {
+    const {hashtag, currentUser} = route.params; // Retrieve currentUser from route.params
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -54,7 +54,7 @@ export default function ProfileScreen({ route, navigation }) {
                     );
                     const groupsSnap = await getDocs(groupsQuery);
                     const filteredGroups = groupsSnap.docs
-                        .map((doc) => ({ id: doc.id, ...doc.data() }))
+                        .map((doc) => ({id: doc.id, ...doc.data()}))
                         .filter(
                             (group) =>
                                 group.public || // Group is public
@@ -97,7 +97,7 @@ export default function ProfileScreen({ route, navigation }) {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#800080" />
+                <ActivityIndicator size="large" color="#800080"/>
             </View>
         );
     }
@@ -110,11 +110,15 @@ export default function ProfileScreen({ route, navigation }) {
         );
     }
 
+    const navigateToGroupDetails = (groupId) => {
+        navigation.navigate('GroupDetails', {groupId: groupId});
+    }
+
     return (
         <ScrollView style={styles.container}>
             <View style={styles.profileHeader}>
                 <Image
-                    source={{ uri: profile.photo || Image.resolveAssetSource(defaultAvatar).uri }}
+                    source={{uri: profile.photo || Image.resolveAssetSource(defaultAvatar).uri}}
                     style={styles.avatar}
                 />
                 <Text style={styles.profileName}>{profile.name}</Text>
@@ -124,7 +128,7 @@ export default function ProfileScreen({ route, navigation }) {
                     onPress={() => {
                         const routes = navigation.getState().routes;
                         const previousScreen = routes[routes.length - 2]?.name;
-                        
+
                         if (previousScreen !== "ChatDetails") {
                             const chatId = [currentUser.hashtag, profile.hashtag].sort().join("_");
 
@@ -146,13 +150,13 @@ export default function ProfileScreen({ route, navigation }) {
                     <Text style={styles.messageButtonText}>Send message</Text>
                 </TouchableOpacity>
             </View>
-            <View style={styles.separator} />
+            <View style={styles.separator}/>
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Availability</Text>
                 {Array.isArray(profile.availabilities) && profile.availabilities.map((availability, index) => (
                     <View key={index} style={styles.availabilityItem}>
-                        <View style={{ flexDirection: "row", alignItems: "center" }}>
-                            <MaterialIcons name="access-time" size={20} color="#800080" />
+                        <View style={{flexDirection: "row", alignItems: "center"}}>
+                            <MaterialIcons name="access-time" size={20} color="#800080"/>
                             <Text style={styles.availabilityTime}>{availability.time}</Text>
                         </View>
                         <View
@@ -162,8 +166,8 @@ export default function ProfileScreen({ route, navigation }) {
                                 alignItems: "center",
                             }}
                         >
-                            <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                <MaterialIcons name="calendar-today" size={20} color="#800080" />
+                            <View style={{flexDirection: "row", alignItems: "center"}}>
+                                <MaterialIcons name="calendar-today" size={20} color="#800080"/>
                                 {availability.days ? (
                                     <View style={styles.daysContainer}>
                                         {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => {
@@ -194,7 +198,7 @@ export default function ProfileScreen({ route, navigation }) {
                                 )}
                             </View>
                             <TouchableOpacity
-                                style={{ marginLeft: "auto" }}
+                                style={{marginLeft: "auto"}}
                                 onPress={() =>
                                     navigation.navigate("StudentAvailabilityDetails", {
                                         availability: availability, // Pass the availability object directly
@@ -207,7 +211,7 @@ export default function ProfileScreen({ route, navigation }) {
                     </View>
                 ))}
             </View>
-            <View style={styles.separator} />
+            <View style={styles.separator}/>
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Public Groups</Text>
                 {Array.isArray(profile.groups) && profile.groups.map((group) => (
@@ -221,13 +225,13 @@ export default function ProfileScreen({ route, navigation }) {
                                 alignItems: "center",
                             }}
                         >
-                            <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                <MaterialIcons name="group" size={20} color="gray" />
+                            <View style={{flexDirection: "row", alignItems: "center"}}>
+                                <MaterialIcons name="group" size={20} color="gray"/>
                                 <Text style={styles.groupMembers}>
                                     {group.groupMembers?.length || 0} members
                                 </Text>
                             </View>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => navigateToGroupDetails(group.id)}>
                                 <Text style={styles.detailsLink}>Details →</Text>
                             </TouchableOpacity>
                         </View>

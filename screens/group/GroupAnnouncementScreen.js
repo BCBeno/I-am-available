@@ -16,7 +16,7 @@ export default function GroupAnnouncementScreen() {
     const route = useRoute();
     const {groupId} = route.params;
 
-    const group = useSelector(state => state.groups).find(group => group.id === groupId);
+    const group = useSelector(state => state.groups.items).find(group => group.id === groupId);
 
     const sendAnnouncement = () => {
         if (announcementText.trim()) {
