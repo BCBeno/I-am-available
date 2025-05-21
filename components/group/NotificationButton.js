@@ -7,13 +7,13 @@ export default function NotificationButton({style, onClick, receiveNotification,
 
     useEffect(() => {
         switch (receiveNotification) {
-            case true:
+            case false:
                 setBackgroundColor(colors.mediumGray);
                 setIconColor(colors.white);
                 setIconName('notifications');
                 break;
 
-            case false:
+            case true:
                 setBackgroundColor(colors.secondary);
                 setIconColor(colors.white);
                 setIconName('notifications-active');

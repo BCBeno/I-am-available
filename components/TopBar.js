@@ -1,15 +1,18 @@
-import { TextInput, TouchableOpacity, View, Image } from "react-native";
-import { colors } from "../colors";
-import { defaultStyles } from "../default-styles";
+import {TextInput, TouchableOpacity, View, Image} from "react-native";
+import {colors} from "../colors";
+import {defaultStyles} from "../default-styles";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { useNavigation } from "@react-navigation/native";
-import defaultIcon from "../assets/defaulticon.png"; 
+import {useNavigation} from "@react-navigation/native";
+import defaultIcon from "../assets/defaulticon.png";
+import {useSelector} from "react-redux";
 
-export default function TopBar({ style, setText, user, setLoggedInUser, hideSearch }) {
+export default function TopBar({style, setText, hideSearch}) {
     const navigation = useNavigation();
 
+    const user = useSelector(state => state.user.data);
+
     const profileImageSource = user?.photo
-        ? { uri: user.photo }
+        ? {uri: user.photo}
         : defaultIcon;
 
     return (
@@ -24,7 +27,7 @@ export default function TopBar({ style, setText, user, setLoggedInUser, hideSear
             },
             style
         ]}>
-            <View style={{ position: "relative", width: "85%" }}>
+            <View style={{position: "relative", width: "85%"}}>
                 <View style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -33,29 +36,29 @@ export default function TopBar({ style, setText, user, setLoggedInUser, hideSear
                     paddingHorizontal: 10,
                 }}>
                     <TextInput
-                        style={[defaultStyles.input, { paddingVertical: 4, flex: 1 }]}
+                        style={[defaultStyles.input, {paddingVertical: 4, flex: 1}]}
                         onChangeText={(text) => setText(text)}
                     />
-                    <MaterialIcons name={'search'} size={24} color={colors.mediumGray} />
+                    <MaterialIcons name={'search'} size={24} color={colors.mediumGray}/>
                 </View>
 
-                            {hideSearch && (
-                <View style={{
-                    position: "absolute",
-                    top: -2, 
-                    left: -2,  
-                    right: -2,   
-                    bottom: -2,  
-                    backgroundColor: colors.primary,
-                    borderRadius: 160, 
-                    zIndex: 1
-                }} />
-            )}
+                {hideSearch && (
+                    <View style={{
+                        position: "absolute",
+                        top: -2,
+                        left: -2,
+                        right: -2,
+                        bottom: -2,
+                        backgroundColor: colors.primary,
+                        borderRadius: 160,
+                        zIndex: 1
+                    }}/>
+                )}
             </View>
 
             <TouchableOpacity
-onPress={() => navigation.navigate('ProfileFlow')}
-                
+                onPress={() => navigation.navigate('ProfileFlow')}
+
             >
                 <Image
                     source={profileImageSource}
