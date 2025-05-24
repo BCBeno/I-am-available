@@ -8,15 +8,17 @@ import LocationDetailsScreen from '../screens/LocationDetailsScreen';
 
 const Stack = createStackNavigator();
 
-export default function AvailabilityNavigator({refreshTrigger, setLoggedInUser}) {
+export default function AvailabilityNavigator({refreshTrigger, setLoggedInUser, user}) {
     return (
         <Stack.Navigator screenOptions={{headerShown: false}}>
             <Stack.Screen name="AvailabilityMain">
                 {({navigation, route}) => (
                     <AvailabilityScreen
+                        user={user}
                         navigation={navigation}
                         route={route}
                         refreshTrigger={refreshTrigger}
+                        setLoggedInUser={setLoggedInUser}
                     />
                 )}
             </Stack.Screen>
@@ -37,6 +39,7 @@ export default function AvailabilityNavigator({refreshTrigger, setLoggedInUser})
                 {(props) => (
                     <CreateAvailabilityScreen
                         {...props}
+                        user={user}
                         setLoggedInUser={setLoggedInUser}
                     />
                 )}
