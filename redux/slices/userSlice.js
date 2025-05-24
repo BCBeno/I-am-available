@@ -1,7 +1,25 @@
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 import {db} from '../../firebaseconfig';
-import {doc, getDoc, updateDoc, arrayUnion, arrayRemove} from 'firebase/firestore';
+import {doc, getDoc, updateDoc, arrayUnion, arrayRemove, setDoc} from 'firebase/firestore';
 
+export const updateUser = createAsyncThunk(
+    'user/update',
+    async ({userData}, thunkAPI) => {
+        try {
+            const state = thunkAPI.getState();
+            const userId = state.user.data.hashtag;
+            console.log(userId);
+            const userRef = doc(db, 'users', userId);
+            const snap = await getDoc(userRef);
+
+            await updateDoc(userRef, userData);
+
+            return {id: userId, ...userData};
+        } catch (err) {
+            return thunkAPI.rejectWithValue(err.message);
+        }
+    }
+);
 
 // Thunk to fetch user data
 export const fetchUser = createAsyncThunk('user/fetchUser', async (uid, {rejectWithValue}) => {
@@ -99,10 +117,12 @@ const userSlice = createSlice({
             })
             .addCase(addGroupToUserInFirebase.fulfilled, (state, action) => {
                 state.loading = false;
+                console.log(state.data.groups);
                 if (state.data) {
                     state.data.groups = state.data.groups || [];
                     state.data.groups.push(action.payload);
                 }
+                console.log(state.data.groups);
             })
             .addCase(addGroupToUserInFirebase.rejected, (state, action) => {
                 state.loading = false;
@@ -118,6 +138,21 @@ const userSlice = createSlice({
                 }
             })
             .addCase(removeGroupFromUserInFirebase.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            // updateUser handlers
+            .addCase(updateUser.pending, state => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateUser.fulfilled, (state, action) => {
+                state.loading = false;
+                if (state.data) {
+                    state.data = {...state.data, ...action.payload};
+                }
+            })
+            .addCase(updateUser.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             });
