@@ -138,7 +138,9 @@ export default function GroupDetailsScreen() {
             >{group.description}</Text>
             {isOwner ? <Button text={"Make an Announcement"} onClick={() => {
                 navigation.navigate("MakeAnouncement", {groupId: group.id})
-            }}/> : <Button text={"Owner Details"}
+            }}/> : <Button text={"Owner Details"} onClick={() => {
+                navigation.navigate("Profile", {userHashtag: group.ownerId})
+            }}
             />}
             {isOwner ? <Button style={{backgroundColor: colors.tertiary}}
                                text={"Invite"} onClick={() => setViewInviteModal(true)}/> :
