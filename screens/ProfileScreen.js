@@ -1,98 +1,97 @@
-import React, {useState, useEffect} from "react";
-import {View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator} from "react-native";
+import React, {useEffect, useState} from "react";
+import {ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View} from "react-native";
 import {MaterialIcons} from "@expo/vector-icons";
 import {ScrollView} from "react-native-gesture-handler";
-import {doc, getDoc, collection, query, where, getDocs} from "firebase/firestore";
+import {collection, doc, getDoc, getDocs, query, where} from "firebase/firestore";
 import {db} from "../firebaseconfig";
 import defaultAvatar from "../assets/default-avatar.png";
+import {useNavigation, useRoute} from "@react-navigation/native";
+import {useSelector} from "react-redux";
 
-export default function ProfileScreen({route, navigation}) {
-    const {hashtag, currentUser} = route.params; // Retrieve currentUser from route.params
+export default function ProfileScreen() {
+    const navigation = useNavigation();
+    const route = useRoute();
+    const {userHashtag} = route.params; // profile hashtag
+
+    // current logged-in user from Redux
+    const currentUser = useSelector((state) => state.user.data);
+
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchUserProfile = async () => {
-            try {
-                // Fetch the current user's groups
-                const currentUserRef = doc(db, "users", currentUser.hashtag);
-                const currentUserSnap = await getDoc(currentUserRef);
+        const fetchProfile = async () => {
+            if (!currentUser || !currentUser.hashtag) {
+                console.error("Current user not found in store");
+                setLoading(false);
+                return;
+            }
 
-                if (!currentUserSnap.exists()) {
-                    console.error("No such current user document!");
+            try {
+                // 1. Fetch target user data
+                const userRef = doc(db, "users", userHashtag);
+                const userSnap = await getDoc(userRef);
+                if (!userSnap.exists()) {
+                    console.error("No such user document!");
                     setLoading(false);
                     return;
                 }
+                const userData = userSnap.data();
 
-                const currentUserData = currentUserSnap.data();
-                const currentUserGroups = Array.isArray(currentUserData.groups)
-                    ? currentUserData.groups.map((group) => group.groupReference)
+                // 2. Prepare role hashtags
+                const roleHashtags = Array.isArray(userData.roles)
+                    ? userData.roles.map((r) => r.hashtag)
+                    : [];
+                if (!roleHashtags.includes(userHashtag)) roleHashtags.push(userHashtag);
+
+                // 3. Fetch currentUser groups (refs)
+                const currentUserRef = doc(db, "users", currentUser.hashtag);
+                const currentUserSnap = await getDoc(currentUserRef);
+                const currentUserGroups = currentUserSnap.exists() && Array.isArray(currentUserSnap.data().groups)
+                    ? currentUserSnap.data().groups.map((g) => g.groupReference)
                     : [];
 
-                // Fetch the profile user data
-                const userRef = doc(db, "users", hashtag);
-                const userSnap = await getDoc(userRef);
+                // 4. Fetch target user's owned groups, filter by public or membership
+                const groupsRef = collection(db, "groups");
+                const groupsQuery = query(
+                    groupsRef,
+                    where("ownerId", "==", userHashtag)
+                );
+                const groupsSnap = await getDocs(groupsQuery);
+                const filteredGroups = groupsSnap.docs
+                    .map((doc) => ({id: doc.id, ...doc.data()}))
+                    .filter((g) => g.public || currentUserGroups.includes(`/groups/${g.id}`));
 
-                if (userSnap.exists()) {
-                    const userData = userSnap.data();
-
-                    // --- Get all role hashtags ---
-                    let roleHashtags = [];
-                    if (Array.isArray(userData.roles)) {
-                        roleHashtags = userData.roles.map(role => role.hashtag);
+                // 5. Fetch availabilities for the target user's roles
+                let availabilities = [];
+                if (roleHashtags.length) {
+                    const availRef = collection(db, "availabilities");
+                    const chunks = [];
+                    // Firestore 'in' supports max 10
+                    for (let i = 0; i < roleHashtags.length; i += 10) {
+                        chunks.push(roleHashtags.slice(i, i + 10));
                     }
-                    // Also include the main hashtag if not present
-                    if (!roleHashtags.includes(hashtag)) {
-                        roleHashtags.push(hashtag);
+                    const docs = [];
+                    for (const chunk of chunks) {
+                        const q = query(availRef, where("roleHashtag", "in", chunk));
+                        const snap = await getDocs(q);
+                        docs.push(...snap.docs);
                     }
-
-                    // Query groups where the other user is the owner
-                    const groupsRef = collection(db, "groups");
-                    const groupsQuery = query(
-                        groupsRef,
-                        where("ownerId", "==", `${hashtag}`) // Other user is the owner
-                    );
-                    const groupsSnap = await getDocs(groupsQuery);
-                    const filteredGroups = groupsSnap.docs
-                        .map((doc) => ({id: doc.id, ...doc.data()}))
-                        .filter(
-                            (group) =>
-                                group.public || // Group is public
-                                currentUserGroups.includes(`/groups/${group.id}`) // Current user is a member
-                        );
-                    // --- Fetch availabilities for all role hashtags ---
-                    let filteredAvailabilities = [];
-                    if (roleHashtags.length > 0) {
-                        const availabilitiesRef = collection(db, "availabilities");
-                        // Firestore 'in' operator supports up to 10 values
-                        const availabilitiesQuery = query(
-                            availabilitiesRef,
-                            where("roleHashtag", "in", roleHashtags)
-                        );
-                        const availabilitiesSnap = await getDocs(availabilitiesQuery);
-                        filteredAvailabilities = availabilitiesSnap.docs
-                            .map((doc) => doc.data())
-                            .filter((availability) =>
-                                currentUserGroups.includes(`/groups/${availability.group}`)
-                            );
-                    }
-                    setProfile({
-                        ...userData,
-                        availabilities: filteredAvailabilities || [],
-                        groups: filteredGroups || [],
-                    });
-                } else {
-                    console.error("No such user document!");
+                    availabilities = docs
+                        .map((d) => d.data())
+                        .filter((a) => currentUserGroups.includes(`/groups/${a.group}`));
                 }
+
+                setProfile({...userData, groups: filteredGroups, availabilities});
             } catch (error) {
-                console.error("Error fetching user document:", error);
+                console.error("Error loading profile:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchUserProfile();
-    }, [hashtag, currentUser.hashtag]);
+        fetchProfile();
+    }, [currentUser, userHashtag]);
 
     if (loading) {
         return (
@@ -110,9 +109,17 @@ export default function ProfileScreen({route, navigation}) {
         );
     }
 
+    const goToChat = () => {
+        const chatId = [currentUser.hashtag, userHashtag].sort().join("_");
+        navigation.navigate("ChatDetails", {
+            chat: {id: chatId, otherParticipantHashtag: userHashtag, otherParticipantName: profile.name},
+            currentUser: {hashtag: currentUser.hashtag},
+        });
+    };
+
     const navigateToGroupDetails = (groupId) => {
-        navigation.navigate('GroupDetails', {groupId: groupId});
-    }
+        navigation.navigate('GroupDetails', {groupId});
+    };
 
     return (
         <ScrollView style={styles.container}>
@@ -122,260 +129,100 @@ export default function ProfileScreen({route, navigation}) {
                     style={styles.avatar}
                 />
                 <Text style={styles.profileName}>{profile.name}</Text>
-                <Text style={styles.profileHashtag}>#{hashtag}</Text>
-                <TouchableOpacity
-                    style={styles.messageButton}
-                    onPress={() => {
-                        const routes = navigation.getState().routes;
-                        const previousScreen = routes[routes.length - 2]?.name;
-
-                        if (previousScreen !== "ChatDetails") {
-                            const chatId = [currentUser.hashtag, profile.hashtag].sort().join("_");
-
-                            navigation.navigate("ChatDetails", {
-                                chat: {
-                                    id: chatId,
-                                    otherParticipantHashtag: profile.hashtag,
-                                    otherParticipantName: profile.name,
-                                },
-                                currentUser: {
-                                    hashtag: currentUser.hashtag,
-                                },
-                            });
-                        } else {
-                            navigation.goBack();
-                        }
-                    }}
-                >
+                <Text style={styles.profileHashtag}>#{userHashtag}</Text>
+                <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
                     <Text style={styles.messageButtonText}>Send message</Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Availability Section */}
             <View style={styles.separator}/>
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Availability</Text>
-                {Array.isArray(profile.availabilities) && profile.availabilities.map((availability, index) => (
-                    <View key={index} style={styles.availabilityItem}>
-                        <View style={{flexDirection: "row", alignItems: "center"}}>
+                {profile.availabilities.map((a, i) => (
+                    <View key={i} style={styles.availabilityItem}>
+                        <View style={styles.rowCenter}>
                             <MaterialIcons name="access-time" size={20} color="#800080"/>
-                            <Text style={styles.availabilityTime}>{availability.time}</Text>
+                            <Text style={styles.availabilityTime}>{a.time}</Text>
                         </View>
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                            }}
-                        >
-                            <View style={{flexDirection: "row", alignItems: "center"}}>
+                        <View style={styles.rowBetween}>
+                            <View style={styles.rowCenter}>
                                 <MaterialIcons name="calendar-today" size={20} color="#800080"/>
-                                {availability.days ? (
+                                {a.days ? (
                                     <View style={styles.daysContainer}>
-                                        {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => {
-                                            const fullDayNames = [
-                                                "Sunday",
-                                                "Monday",
-                                                "Tuesday",
-                                                "Wednesday",
-                                                "Thursday",
-                                                "Friday",
-                                                "Saturday",
-                                            ];
-
-                                            const isActive = availability.days.includes(fullDayNames[index]);
-
+                                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => {
+                                            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                            const active = a.days.includes(days[idx]);
                                             return (
-                                                <Text
-                                                    key={index}
-                                                    style={[styles.day, isActive && styles.activeDay]}
-                                                >
-                                                    {day}
+                                                <Text key={idx} style={[styles.day, active && styles.activeDay]}>
+                                                    {d}
                                                 </Text>
                                             );
                                         })}
                                     </View>
                                 ) : (
-                                    <Text style={styles.availabilityDate}>{availability.date}</Text>
+                                    <Text style={styles.availabilityDate}>{a.date}</Text>
                                 )}
                             </View>
                             <TouchableOpacity
-                                style={{marginLeft: "auto"}}
-                                onPress={() =>
-                                    navigation.navigate("StudentAvailabilityDetails", {
-                                        availability: availability, // Pass the availability object directly
-                                    })
-                                }
-                            >
+                                onPress={() => navigation.navigate('StudentAvailabilityDetails', {availability: a})}>
                                 <Text style={styles.detailsLink}>Details →</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 ))}
             </View>
+
+            {/* Public Groups Section */}
             <View style={styles.separator}/>
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Public Groups</Text>
-                {Array.isArray(profile.groups) && profile.groups.map((group) => (
-                    <View key={group.id} style={styles.groupItem}>
-                        <Text style={styles.groupName}>{group.name}</Text>
-                        <Text style={styles.groupId}>#{group.id}</Text>
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                            }}
-                        >
-                            <View style={{flexDirection: "row", alignItems: "center"}}>
-                                <MaterialIcons name="group" size={20} color="gray"/>
-                                <Text style={styles.groupMembers}>
-                                    {group.groupMembers?.length || 0} members
-                                </Text>
+                {
+                    profile.groups.map((g) => (
+                        <View key={g.id} style={styles.groupItem}>
+                            <Text style={styles.groupName}>{g.name}</Text>
+                            <Text style={styles.groupId}>#{g.id}</Text>
+                            <View style={styles.rowBetween}>
+                                <View style={styles.rowCenter}>
+                                    <MaterialIcons name="group" size={20} color="gray"/>
+                                    <Text style={styles.groupMembers}>{g.groupMembers?.length || 0} members</Text>
+                                </View>
+                                <TouchableOpacity onPress={() => navigateToGroupDetails(g.id)}>
+                                    <Text style={styles.detailsLink}>Details →</Text>
+                                </TouchableOpacity>
                             </View>
-                            <TouchableOpacity onPress={() => navigateToGroupDetails(group.id)}>
-                                <Text style={styles.detailsLink}>Details →</Text>
-                            </TouchableOpacity>
                         </View>
-                    </View>
-                ))}
+                    ))}
             </View>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        marginTop: 70,
-        marginHorizontal: 5,
-        padding: 25,
-        paddingTop: 30,
-        marginBottom: 25,
-    },
-    profileHeader: {
-        alignItems: "center",
-        marginBottom: 20,
-    },
-    avatar: {
-        width: 80,
-        height: 80,
-        backgroundColor: "#ccc",
-        borderRadius: 40,
-        marginBottom: 10,
-    },
-    profileName: {
-        fontSize: 18,
-        fontWeight: "bold",
-    },
-    profileHashtag: {
-        fontSize: 14,
-        color: "gray",
-        marginBottom: 10,
-        fontStyle: "italic",
-    },
-    messageButton: {
-        backgroundColor: "#800080",
-        paddingVertical: 15,
-        paddingHorizontal: 30,
-        borderRadius: 50,
-    },
-    messageButtonText: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "bold",
-    },
-    section: {
-        marginBottom: 20,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: "bold",
-        marginBottom: 30,
-        textAlign: "center",
-    },
-    availabilityItem: {
-        flexDirection: "column",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        marginBottom: 15,
-        paddingBottom: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: "#ccc",
-    },
-    availabilityTime: {
-        fontSize: 14,
-        marginLeft: 5,
-        color: "#000",
-    },
-    availabilityDays: {
-        fontSize: 14,
-        marginLeft: 5,
-        color: "#800080",
-        fontWeight: "bold",
-    },
-    detailsLink: {
-        fontSize: 14,
-        color: "black",
-        fontWeight: "bold",
-        marginLeft: 180,
-    },
-    groupItem: {
-        marginBottom: 10,
-        paddingBottom: 15,
-    },
-    groupName: {
-        fontSize: 14,
-        fontWeight: "bold",
-    },
-    groupId: {
-        fontSize: 12,
-        color: "gray",
-    },
-    groupMembers: {
-        fontSize: 12,
-        color: "gray",
-        marginBottom: 5,
-    },
-    separator: {
-        borderBottomWidth: 1,
-        borderBottomColor: "#ccc",
-        marginVertical: 10,
-    },
-    daysContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 5,
-    },
-    day: {
-        fontSize: 14,
-        color: "gray",
-        marginHorizontal: 2,
-    },
-    activeDay: {
-        color: "#800080",
-        fontWeight: "bold",
-    },
-    availabilityDate: {
-        fontSize: 14,
-        color: "#000",
-        fontWeight: "bold",
-    },
-    totalMembers: {
-        fontSize: 14,
-        color: "gray",
-        marginBottom: 10,
-        textAlign: "center",
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    errorContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    errorText: {
-        fontSize: 16,
-        color: "red",
-    },
+    container: {flex: 1, padding: 20, paddingTop: 80},
+    profileHeader: {alignItems: "center", marginBottom: 20},
+    avatar: {width: 80, height: 80, borderRadius: 40, backgroundColor: "#ccc", marginBottom: 10},
+    profileName: {fontSize: 18, fontWeight: "bold"},
+    profileHashtag: {fontSize: 14, color: "gray", fontStyle: "italic"},
+    messageButton: {backgroundColor: "#800080", padding: 12, borderRadius: 25, marginTop: 10},
+    messageButtonText: {color: "#fff", fontWeight: "bold"},
+    separator: {height: 1, backgroundColor: "#ddd", marginVertical: 15},
+    section: {marginBottom: 20},
+    sectionTitle: {fontSize: 16, fontWeight: "bold", marginBottom: 10, textAlign: "center"},
+    availabilityItem: {marginBottom: 15, borderBottomWidth: 1, borderBottomColor: "#eee", paddingBottom: 10},
+    rowCenter: {flexDirection: "row", alignItems: "center"},
+    rowBetween: {flexDirection: "row", justifyContent: "space-between", alignItems: "center"},
+    availabilityTime: {marginLeft: 5, fontSize: 14},
+    daysContainer: {flexDirection: "row", marginLeft: 5},
+    day: {marginHorizontal: 2, fontSize: 14, color: "gray"},
+    activeDay: {color: "#800080", fontWeight: "bold"},
+    availabilityDate: {marginLeft: 5, fontSize: 14, fontWeight: "bold"},
+    detailsLink: {fontSize: 14, fontWeight: "bold", color: "black"},
+    groupItem: {marginBottom: 10},
+    groupName: {fontSize: 14, fontWeight: "bold"},
+    groupId: {fontSize: 12, color: "gray", marginBottom: 5},
+    groupMembers: {fontSize: 12, color: "gray"},
+    loadingContainer: {flex: 1, justifyContent: "center", alignItems: "center"},
+    errorContainer: {flex: 1, justifyContent: "center", alignItems: "center"},
+    errorText: {color: "red", fontSize: 16},
 });
