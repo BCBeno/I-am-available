@@ -1,186 +1,179 @@
 //CreateAvailabilityScreen.js
-import React, { useState,useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Switch, ScrollView, Image, Alert
+    View, Text, TextInput, TouchableOpacity, StyleSheet,
+    Switch, ScrollView, Image, Alert
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import MapView, { Marker, Circle } from 'react-native-maps';
-import { Picker } from '@react-native-picker/picker';
-import { doc, updateDoc, collection, addDoc } from 'firebase/firestore';
-import { db } from '../firebaseconfig';
+import MapView, {Marker, Circle} from 'react-native-maps';
+import {Picker} from '@react-native-picker/picker';
+import {doc, updateDoc, collection, addDoc} from 'firebase/firestore';
+import {db} from '../firebaseconfig';
 import CalendarIcon from '../assets/Calendar.png';
+import {useDispatch, useSelector} from "react-redux";
+import {updateUser} from '../redux/slices/userSlice';
 
-export default function CreateAvailabilityScreen({ navigation, route, setLoggedInUser }) {
-  const { user } = route.params;
+export default function CreateAvailabilityScreen({navigation, route}) {
+    const user = useSelector(state => state.user.data);
+    const groupOptions = useSelector(state => state.groups.items);
+    const dispatch = useDispatch();
 
-  const roleOptions = user?.roles || [];
-
-
-const roleHashtags = user.roles?.map(r => r.hashtag) || [];
-const groupOptions = Object.values(user.groups || {}).filter(
-  (group) => roleHashtags.includes(group.ownerRoleHashtag)
-);
-
-
-  const [profile, setProfile] = useState(roleOptions[0]?.hashtag || '');
-  const [group, setGroup] = useState('');
-  const [startTime, setStartTime] = useState('14:00');
-  const [endTime, setEndTime] = useState('16:00');
-  const [date, setDate] = useState(new Date());
-  const [repeats, setRepeats] = useState(false);
-  const [selectedDays, setSelectedDays] = useState([]);
-  const [locationType, setLocationType] = useState('onSite');
-  const [location, setLocation] = useState({ latitude: 41.79662, longitude: -6.76844 });
-  const [radius, setRadius] = useState('100');
-  const [complement, setComplement] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
-
-
-  useEffect(() => {
-    if (groupOptions.length === 0) {
-      Alert.alert(
-        "Access Denied",
-        "You are not the owner of any groups to create availability for.",
-        [{ text: "OK", onPress: () => navigation.goBack() }]
-      );
-      return;
-    }
-  
-    // Set default group and profile (owner role)
-    const defaultGroup = groupOptions[0];
-    setGroup(defaultGroup.id);
-    setProfile(defaultGroup.ownerRoleHashtag);
-  }, [groupOptions]);
-  
-  useEffect(() => {
-    const selectedGroup = groupOptions.find(g => g.id === group);
-    if (selectedGroup) {
-      setProfile(selectedGroup.ownerRoleHashtag);
-    }
-  }, [group]);
-  
-  const toggleDay = (day) => {
-    setSelectedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
-  };
-
-  const handleMapPress = (e) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    setLocation({ latitude, longitude });
-  };
-
-  const handleConfirm = async () => {
-    if (!profile) return Alert.alert('Missing info', 'Please select a role.');
-  
-    if (!group) {
-        return Alert.alert('Missing info', 'Please select a group.');
-      }
+    const roleOptions = user?.roles.map(r => r.hashtag) || [];
     
-    const [startH, startM] = startTime.split(':').map(Number);
-    const [endH, endM] = endTime.split(':').map(Number);
-    const start = new Date();
-    const end = new Date();
-    start.setHours(startH, startM);
-    end.setHours(endH, endM);
-    if (end <= start) return Alert.alert('Invalid time', 'End time must be after start.');
-  
+    const [profile, setProfile] = useState(roleOptions[0] || '');
+    const [group, setGroup] = useState('');
+    const [startTime, setStartTime] = useState('14:00');
+    const [endTime, setEndTime] = useState('16:00');
+    const [date, setDate] = useState(new Date());
+    const [repeats, setRepeats] = useState(false);
+    const [selectedDays, setSelectedDays] = useState([]);
+    const [locationType, setLocationType] = useState('onSite');
+    const [location, setLocation] = useState({latitude: 41.79662, longitude: -6.76844});
+    const [radius, setRadius] = useState('100');
+    const [complement, setComplement] = useState('');
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showStartPicker, setShowStartPicker] = useState(false);
+    const [showEndPicker, setShowEndPicker] = useState(false);
 
-    if (repeats && selectedDays.length === 0) {
-      return Alert.alert('Missing days', 'Select at least one day.');
-    }
-  
-    //  Time string
-    const timeRange = `${startTime} - ${endTime}`;
-  
-    // Build availability object
-    const newAvailability = {
-        roleHashtag: profile,
-        group,
-        time: timeRange,
-        repeats,
-        locationType,
-        complement,
-        ...(repeats
-          ? { days: selectedDays }
-          : { date: date.toISOString().split('T')[0] }),
-        ...(locationType === 'onSite' && {
-          coordinates: location,
-          radius: parseInt(radius),
-          isavailable: false,
-        }),
-      };
-      
-  
-    const isDuplicate = user.availabilities?.some((a) =>
-      a.roleHashtag === newAvailability.roleHashtag &&
-      a.time === newAvailability.time &&
-      a.group === newAvailability.group &&
-      (a.repeats
-        ? JSON.stringify(a.days) === JSON.stringify(newAvailability.days)
-        : a.date === newAvailability.date)
-    );
-  
-    if (isDuplicate) {
-      Alert.alert('Duplicate', 'This availability already exists.');
-      return;
-    }
-  
-    try {
-      const docRef = await addDoc(collection(db, 'availabilities'), newAvailability);
-  
-      const updatedUser = {
-        ...user,
-        availabilities: [...(user.availabilities || []), { id: docRef.id, ...newAvailability }],
-      };
-  
-      setLoggedInUser(updatedUser);
-      navigation.navigate('AvailabilityMain', { refreshed: true });
-    } catch (err) {
-      console.error('❌ Error saving availability:', err);
-      Alert.alert('Error', 'Failed to save availability.');
-    }
-  };
-  
-      
+    useEffect(() => {
+        if (groupOptions.length === 0) {
+            Alert.alert(
+                "Access Denied",
+                "You are not the owner of any groups to create availability for.",
+                [{text: "OK", onPress: () => navigation.goBack()}]
+            );
+            return;
+        }
 
-  
+        // Set default group and profile (owner role)
+        const defaultGroup = groupOptions[0];
+        setGroup(defaultGroup.id);
+        setProfile(defaultGroup.ownerRoleHashtag);
+    }, [groupOptions]);
 
-  const daysOfWeek = [
-    { label: 'S', full: 'Sunday' }, { label: 'M', full: 'Monday' },
-    { label: 'T', full: 'Tuesday' }, { label: 'W', full: 'Wednesday' },
-    { label: 'T', full: 'Thursday' }, { label: 'F', full: 'Friday' },
-    { label: 'S', full: 'Saturday' }
-  ];
+    useEffect(() => {
+        const selectedGroup = groupOptions.find(g => g.id === group);
+        if (selectedGroup) {
+            setProfile(selectedGroup.ownerRoleHashtag);
+        }
+    }, [group]);
+
+    const toggleDay = (day) => {
+        setSelectedDays((prev) =>
+            prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+        );
+    };
+
+    const handleMapPress = (e) => {
+        const {latitude, longitude} = e.nativeEvent.coordinate;
+        setLocation({latitude, longitude});
+    };
+
+    const handleConfirm = async () => {
+        if (!profile) return Alert.alert('Missing info', 'Please select a role.');
+
+        if (!group) {
+            return Alert.alert('Missing info', 'Please select a group.');
+        }
+
+        const [startH, startM] = startTime.split(':').map(Number);
+        const [endH, endM] = endTime.split(':').map(Number);
+        const start = new Date();
+        const end = new Date();
+        start.setHours(startH, startM);
+        end.setHours(endH, endM);
+        if (end <= start) return Alert.alert('Invalid time', 'End time must be after start.');
 
 
-  
+        if (repeats && selectedDays.length === 0) {
+            return Alert.alert('Missing days', 'Select at least one day.');
+        }
+
+        //  Time string
+        const timeRange = `${startTime} - ${endTime}`;
+
+        // Build availability object
+        const newAvailability = {
+            roleHashtag: profile,
+            group,
+            time: timeRange,
+            repeats,
+            locationType,
+            complement,
+            ...(repeats
+                ? {days: selectedDays}
+                : {date: date.toISOString().split('T')[0]}),
+            ...(locationType === 'onSite' && {
+                coordinates: location,
+                radius: parseInt(radius),
+                isavailable: false,
+            }),
+        };
+
+
+        const isDuplicate = user.availabilities?.some((a) =>
+            a.roleHashtag === newAvailability.roleHashtag &&
+            a.time === newAvailability.time &&
+            a.group === newAvailability.group &&
+            (a.repeats
+                ? JSON.stringify(a.days) === JSON.stringify(newAvailability.days)
+                : a.date === newAvailability.date)
+        );
+
+        if (isDuplicate) {
+            Alert.alert('Duplicate', 'This availability already exists.');
+            return;
+        }
+
+        try {
+            const docRef = await addDoc(collection(db, 'availabilities'), newAvailability);
+
+            const updatedUser = {
+                ...user,
+                availabilities: [...(user.availabilities || []), {id: docRef.id, ...newAvailability}],
+            };
+
+            dispatch(updateUser({userData: updatedUser}));
+            navigation.navigate('AvailabilityMain', {refreshed: true});
+        } catch (err) {
+            console.error('❌ Error saving availability:', err);
+            Alert.alert('Error', 'Failed to save availability.');
+        }
+    };
+
+
+    const daysOfWeek = [
+        {label: 'S', full: 'Sunday'}, {label: 'M', full: 'Monday'},
+        {label: 'T', full: 'Tuesday'}, {label: 'W', full: 'Wednesday'},
+        {label: 'T', full: 'Thursday'}, {label: 'F', full: 'Friday'},
+        {label: 'S', full: 'Saturday'}
+    ];
+
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.label}>Role</Text>
             <Picker
-            selectedValue={profile}
-            enabled={true}
-            style={[styles.picker]} 
+                selectedValue={roleOptions[0] || ''}
+                enabled={true}
+                style={[styles.picker]}
+                onValueChange={(itemValue) => setProfile(itemValue)}
             >
-            <Picker.Item label={profile} value={profile} />
+                {roleOptions.map((role) => (
+                    <Picker.Item key={role} label={role} value={role}/>
+                ))}
             </Picker>
-
 
             <Text style={styles.label}>Group</Text>
             <Picker
-            selectedValue={group}
-            onValueChange={(itemValue) => setGroup(itemValue)}
-            style={styles.picker}
+                selectedValue={group}
+                onValueChange={(itemValue) => setGroup(itemValue)}
+                style={styles.picker}
             >
-            {groupOptions.map((grp) => (
-            <Picker.Item key={grp.id} label={grp.id} value={grp.id} />
-            ))}
+                {groupOptions.map((grp) => (
+                    <Picker.Item key={grp.id} label={grp.id} value={grp.id}/>
+                ))}
             </Picker>
-
 
 
             <View style={styles.rowBetween}>
