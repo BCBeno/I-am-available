@@ -1,13 +1,10 @@
 //CreateAvailabilityScreen.js
-import React, {useState, useEffect} from 'react';
-import {
-    View, Text, TextInput, TouchableOpacity, StyleSheet,
-    Switch, ScrollView, Image, Alert
-} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {Alert, Image, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import MapView, {Marker, Circle} from 'react-native-maps';
+import MapView, {Circle, Marker} from 'react-native-maps';
 import {Picker} from '@react-native-picker/picker';
-import {doc, updateDoc, collection, addDoc} from 'firebase/firestore';
+import {addDoc, collection} from 'firebase/firestore';
 import {db} from '../firebaseconfig';
 import CalendarIcon from '../assets/Calendar.png';
 import {useDispatch, useSelector} from "react-redux";
@@ -15,11 +12,16 @@ import {updateUser} from '../redux/slices/userSlice';
 
 export default function CreateAvailabilityScreen({navigation, route}) {
     const user = useSelector(state => state.user.data);
-    const groupOptions = useSelector(state => state.groups.items);
+    const groups = useSelector(state => state.groups.items);
     const dispatch = useDispatch();
 
+    const [groupOptions, setGroupOptions] = useState(groups);
+    useEffect(() => {
+        setGroupOptions(groups.filter(g => g.ownerId === user.hashtag));
+    }, [groups, user.hashtag]);
+
     const roleOptions = user?.roles.map(r => r.hashtag) || [];
-    
+
     const [profile, setProfile] = useState(roleOptions[0] || '');
     const [group, setGroup] = useState('');
     const [startTime, setStartTime] = useState('14:00');
