@@ -1,16 +1,46 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {Modal, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View} from 'react-native';
 import Button from "../Button";
 import {colors} from "../../colors";
 import {defaultStyles} from "../../default-styles";
-import {useDispatch, useSelector} from "react-redux";
+import {collection, getDoc, updateDoc, doc} from "firebase/firestore";
+import {db} from "../../firebaseconfig";
 
-export default function JoinGroupModal({modalVisible, setModalVisible}) {
+export default function JoinGroupModal({modalVisible, setModalVisible, group}) {
 
-    const sendInvite = () => {
-        // send the invite to the user
-        onClose()
-    }
+    const [username, setUsername] = useState('');
+
+    const sendInvite = async () => {
+        const docRef = doc(db, "users", username);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            alert(`User not found with username: ${username}`);
+            onClose()
+            return;
+        }
+
+        const user = docSnap.data();
+
+        const alreadyInvited = (user.invites || []).some(invite =>
+            (invite?.groupReference?.replace('/groups/', '') === group.id)
+        );
+
+        if (alreadyInvited) {
+            alert(`User already invited to this group`);
+            onClose()
+            return;
+        }
+
+        const newInvites = [...(user.invites || []), {
+            groupReference: `/groups/${group.id}`,
+        }];
+
+        await updateDoc(docRef, {invites: newInvites});
+
+        alert(`Invite sent to ${username}`);
+        onClose();
+    };
 
     const onClose = () => {
         setModalVisible(false);
@@ -47,11 +77,11 @@ export default function JoinGroupModal({modalVisible, setModalVisible}) {
                                         }
                                     ]}
                                     placeholderTextColor={colors.mediumGray}
-                                    multiline
-                                    numberOfLines={4}/>
+                                    onChangeText={(text) => setUsername(text)}
+                                />
                                 <Button text={"Invite"}
                                         style={{backgroundColor: colors.primary, width: "100%", marginTop: 10}}
-                                        onClick={sendInvite}/>
+                                        onClick={() => sendInvite()}/>
                             </View>
                         </TouchableWithoutFeedback>
                     </View>
