@@ -9,6 +9,7 @@ import {fetchUser} from '../../redux/slices/userSlice';
 import {fetchGroups, fetchGroupsByList} from '../../redux/slices/groupSlice';
 import {collection, query, where} from 'firebase/firestore';
 import {db} from "../../firebaseconfig";
+import {useFocusEffect} from "@react-navigation/native";
 
 export default function GroupScreen() {
     const dispatch = useDispatch();
@@ -47,10 +48,17 @@ export default function GroupScreen() {
         return () => clearTimeout(handler);
     }, [searchText, user, dispatch]);
 
+    useFocusEffect(
+        React.useCallback(() => {
+            return () => {
+                setSearchText('');
+            };
+        }, [])
+    );
 
     return (
         <>
-            <TopBar style={{paddingTop: '15%'}} setText={setSearchText}/>
+            <TopBar style={{paddingTop: '15%'}} setText={setSearchText} text={searchText}/>
             <View style={[defaultStyles.container, {paddingTop: '5%'}]}>
                 <FlatList
                     data={groups}
