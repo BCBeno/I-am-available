@@ -20,7 +20,7 @@ export default function NewGroupForm({onClose, edit, group}) {
     const [groupDescription, setGroupDescription] = useState(group?.description ?? '');
     const [publicGroup, setPublicGroup] = useState(group?.public ?? false);
     const [autoAdmission, setAutoAdmission] = useState(group?.autoAdmission ?? false);
-    const [selectedRole, setSelectedRole] = useState(group?.ownerRoleHashtag ?? '');
+    const [selectedRole, setSelectedRole] = useState(group?.ownerRoleHashtag ?? user.roles?.[0]?.hashtag ?? '');
     const [groupMembers, setGroupMembers] = useState([]);
     const [joinRequests, setJoinRequests] = useState(group?.joinRequests ?? []);
 
@@ -37,7 +37,7 @@ export default function NewGroupForm({onClose, edit, group}) {
     const handleSubmit = async () => {
         if (!groupName) return alert('Group name is required');
         if (!groupHashtag) return alert('Group hashtag is required');
-        if (!selectedRole) return alert('Associated role is required');
+        if (selectedRole === '') return alert('Associated role is required');
         if (groups.some(g => g.id === groupHashtag) && (!edit || group.id !== groupHashtag)) {
             return alert('This Group hashtag already exists');
         }

@@ -21,7 +21,9 @@ export default function JoinGroupModal({modalVisible, setModalVisible, groupId})
         }
 
         if (group?.joinRequests?.some(r => r.hashtag === user.hashtag)) {
-            return alert("You already sent a request to join this group");
+            alert("You already sent a request to join this group");
+            onClose()
+            return;
         }
 
         const newGroup = {

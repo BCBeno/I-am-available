@@ -29,7 +29,7 @@ export default function GroupScreen() {
         const handler = setTimeout(() => {
             if (searchText === '') {
                 if (user?.groups?.length > 0) {
-                    const refs = user.groups.map(g => g.groupReference);
+                    const refs = user.groups.map(g => g.groupReference).sort((a, b) => a.localeCompare(b));
                     dispatch(fetchGroupsByList(refs));
                 }
             } else {
