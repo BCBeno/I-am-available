@@ -13,7 +13,6 @@ import {updateUser} from '../redux/slices/userSlice';
 export default function CreateAvailabilityScreen({navigation, route}) {
     const user = useSelector(state => state.user.data);
     const groups = useSelector(state => state.groups.items);
-    const dispatch = useDispatch();
 
     const [groupOptions, setGroupOptions] = useState(groups);
     useEffect(() => {
@@ -96,6 +95,7 @@ export default function CreateAvailabilityScreen({navigation, route}) {
 
         // Build availability object
         const newAvailability = {
+            user: user.hashtag,
             roleHashtag: profile,
             group,
             time: timeRange,
@@ -129,13 +129,6 @@ export default function CreateAvailabilityScreen({navigation, route}) {
 
         try {
             const docRef = await addDoc(collection(db, 'availabilities'), newAvailability);
-
-            const updatedUser = {
-                ...user,
-                availabilities: [...(user.availabilities || []), {id: docRef.id, ...newAvailability}],
-            };
-
-            dispatch(updateUser({userData: updatedUser}));
             navigation.navigate('AvailabilityMain', {refreshed: true});
         } catch (err) {
             console.error('❌ Error saving availability:', err);

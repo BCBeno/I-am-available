@@ -61,7 +61,7 @@ export default function NewGroupForm({onClose, edit, group}) {
         };
 
         try {
-            // await dispatch(createOrUpdateGroup({groupId: newGroup.id, groupData: newGroup, userHashtag: user.hashtag}));
+            await dispatch(createOrUpdateGroup({groupId: newGroup.id, groupData: newGroup, userHashtag: user.hashtag}));
             alert(edit ? 'Group updated successfully' : 'Group created successfully');
             onClose();
         } catch (err) {
