@@ -6,7 +6,7 @@ import {useNavigation} from "@react-navigation/native";
 import defaultIcon from "../assets/defaulticon.png";
 import {useSelector} from "react-redux";
 
-export default function TopBar({style, setText, hideSearch}) {
+export default function TopBar({style, setText, hideSearch, text}) {
     const navigation = useNavigation();
 
     const user = useSelector(state => state.user.data);
@@ -38,6 +38,7 @@ export default function TopBar({style, setText, hideSearch}) {
                     <TextInput
                         style={[defaultStyles.input, {paddingVertical: 4, flex: 1}]}
                         onChangeText={(text) => setText(text)}
+                        value={text}
                     />
                     <MaterialIcons name={'search'} size={24} color={colors.mediumGray}/>
                 </View>
