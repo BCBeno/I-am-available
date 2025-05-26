@@ -103,7 +103,7 @@ export default function ChatScreen({route}) {
         );
     };
 
-    const renderChatItem = ({ item }) => {
+    const renderChatItem = ({item}) => {
         const otherParticipant = item.participants.find(
             (participant) => participant !== currentUser.hashtag
         );
@@ -123,12 +123,12 @@ export default function ChatScreen({route}) {
                         const updatedChatData = chatData.map((chat) =>
                             chat.id === item.id
                                 ? {
-                                      ...chat,
-                                      isRead: {
-                                          ...chat.isRead,
-                                          [currentUser.hashtag]: true,
-                                      },
-                                  }
+                                    ...chat,
+                                    isRead: {
+                                        ...chat.isRead,
+                                        [currentUser.hashtag]: true,
+                                    },
+                                }
                                 : chat
                         );
                         setChatData(updatedChatData);
@@ -166,11 +166,11 @@ export default function ChatScreen({route}) {
                     </View>
                 </View>
                 <TouchableOpacity onPress={() => handleRemovePress(item)}>
-                    <MaterialIcons name="delete" size={24} color="red" />
+                    <MaterialIcons name="delete" size={24} color="red"/>
                 </TouchableOpacity>
             </TouchableOpacity>
 
-            
+
         );
     };
 
@@ -183,7 +183,7 @@ export default function ChatScreen({route}) {
                     value={searchQuery}
                     onChangeText={handleSearch}
                 />
-                <MaterialIcons name="search" size={24} color="gray" />
+                <MaterialIcons name="search" size={24} color="gray"/>
             </View>
             <FlatList
                 data={chatData}
@@ -193,9 +193,10 @@ export default function ChatScreen({route}) {
             />
             <Button title="Debug Profile" onPress={
                 () => {
-                    navigation.navigate("Profile", { hashtag: "ben1" })}
-                } 
-        />
+                    navigation.navigate("Profile", {userHashtag: "ben1"})
+                }
+            }
+            />
         </View>
     );
 }

@@ -11,6 +11,7 @@ import GroupStack from "../screens/group/GroupStack";
 import {useDispatch} from "react-redux";
 import {fetchUser} from "../redux/slices/userSlice";
 import GroupDetailsScreen from "../screens/group/GroupDetailsScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator();
 const RootStack = createStackNavigator();
@@ -86,6 +87,7 @@ export default function MainTabNavigator({user, setLoggedInUser}) {
                 )}
             </RootStack.Screen>
             <RootStack.Screen name="GroupDetails" component={GroupDetailsScreen}/>
+            <RootStack.Screen name="Profile" component={ProfileScreen}/>
         </RootStack.Navigator>
     );
 }
