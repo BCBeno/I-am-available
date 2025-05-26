@@ -9,7 +9,8 @@ import {
     arrayUnion,
     arrayRemove,
     addDoc,
-    deleteDoc, setDoc
+    writeBatch,
+    deleteDoc, setDoc, query, where
 } from 'firebase/firestore';
 import {db} from '../../firebaseconfig';
 import {
@@ -102,6 +103,17 @@ export const deleteGroup = createAsyncThunk(
                         userHashtag: member.userReference.split('/')[2],
                     }));
                 }
+
+                const q = query(collection(db, 'availabilities'), where('group', '==', group.id));
+                const snap = await getDocs(q);
+
+                const batch = writeBatch(db);
+
+                snap.docs.forEach((docSnap) => {
+                    batch.delete(doc(db, 'availabilities', docSnap.id));
+                });
+
+                await batch.commit();
             }
             await deleteDoc(groupDocRef);
             return groupId;

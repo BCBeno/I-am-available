@@ -7,7 +7,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {addGroup, createOrUpdateGroup} from '../../redux/slices/groupSlice';
 import {addGroupToUserInFirebase} from '../../redux/slices/userSlice';
 import {db} from '../../firebaseconfig';
-import {doc, getDoc, setDoc, updateDoc, arrayUnion} from 'firebase/firestore';
+import {doc, getDoc, setDoc, updateDoc, arrayUnion, collection, query, where, getDocs} from 'firebase/firestore';
 import {Picker} from '@react-native-picker/picker';
 
 export default function NewGroupForm({onClose, edit, group}) {
@@ -38,7 +38,12 @@ export default function NewGroupForm({onClose, edit, group}) {
         if (!groupName) return alert('Group name is required');
         if (!groupHashtag) return alert('Group hashtag is required');
         if (selectedRole === '') return alert('Associated role is required');
-        if (groups.some(g => g.id === groupHashtag) && (!edit || group.id !== groupHashtag)) {
+
+        const q = query(collection(db, 'groups'), where('id', '==', groupHashtag));
+        const querySnapshot = await getDocs(q);
+        const hashtagExists = !querySnapshot.empty;
+
+        if (hashtagExists) {
             return alert('This Group hashtag already exists');
         }
 
@@ -56,7 +61,7 @@ export default function NewGroupForm({onClose, edit, group}) {
         };
 
         try {
-            await dispatch(createOrUpdateGroup({groupId: newGroup.id, groupData: newGroup, userHashtag: user.hashtag}));
+            // await dispatch(createOrUpdateGroup({groupId: newGroup.id, groupData: newGroup, userHashtag: user.hashtag}));
             alert(edit ? 'Group updated successfully' : 'Group created successfully');
             onClose();
         } catch (err) {
