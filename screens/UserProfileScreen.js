@@ -1,94 +1,80 @@
-//ProfilePage.js
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     View,
     Text,
     Image,
     TouchableOpacity,
     ScrollView,
-    StyleSheet,
     Alert,
-    TextInput
+    TextInput,
+    StyleSheet
 } from 'react-native';
 import defaultPhoto from '../assets/defaulticon.png';
 import editIcon from '../assets/edit-button-icon.png';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import { defaultStyles } from '../default-styles';
+import {defaultStyles} from '../default-styles';
 import BackButton from '../components/BackButton';
-import { loadCompleteUserData } from '../data/userDataLoader';
-import { doc, updateDoc,setDoc} from 'firebase/firestore';
-import { db } from '../firebaseconfig';
-import { deleteRoleData } from '../data/deleteRoleData';
-import { useFocusEffect } from '@react-navigation/native';
-import { BackHandler } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { getDoc } from 'firebase/firestore'; 
-import { getAuth, signOut } from 'firebase/auth';
+import {loadCompleteUserData} from '../data/userDataLoader';
+import {deleteRoleData} from '../data/deleteRoleData';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {BackHandler} from 'react-native';
+import {getDoc, doc, setDoc, updateDoc} from 'firebase/firestore';
+import {db} from '../firebaseconfig';
+import {getAuth, signOut} from 'firebase/auth';
+import {useSelector, useDispatch} from 'react-redux';
+import {deleteGroup} from "../redux/slices/groupSlice";
+import {fetchUser, updateUser} from "../redux/slices/userSlice";
 
-const ProfileScreen = ({ user, setLoggedInUser }) => {
-    const navigation = useNavigation(); 
+const UserProfileScreen = () => {
+    const dispatch = useDispatch();
+    const user = useSelector(state => state.user.data);
+    const navigation = useNavigation();
+
     const [deletedRoleHashtags, setDeletedRoleHashtags] = useState([]);
     const [mockUser, setMockUser] = useState(null);
     const [tempUser, setTempUser] = useState(null);
     const [editMode, setEditMode] = useState(false);
-    const [showOptions, setShowOptions] = useState(false);
     const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
     const [editingRole, setEditingRole] = useState(null);
     const [editedRoleName, setEditedRoleName] = useState('');
     const [newRoleModalVisible, setNewRoleModalVisible] = useState(false);
-    const [newRoleData, setNewRoleData] = useState({ name: '', hashtag: '' });
+    const [newRoleData, setNewRoleData] = useState({name: '', hashtag: ''});
     const [newHashtagsToCreate, setNewHashtagsToCreate] = useState([]);
-    const [confirmDisabled, setConfirmDisabled] = useState(false);// Confirm button disabled state 5 second coolwond to assure no spamming 
+    const [confirmDisabled, setConfirmDisabled] = useState(false);
 
     useEffect(() => {
-        setMockUser(user); // use the user that was passed from navigation
-    }, [user]);
-    
-      
+        setMockUser(user);
+    }, [user, tempUser]);
 
-    const saveProfileChanges = async (updatedUser) => {
+    const saveProfileToFirestore = async (updatedUser) => {
         try {
             const userRef = doc(db, 'users', updatedUser.hashtag);
-            await updateDoc(userRef, {
-                roles: updatedUser.roles,
-                photo: updatedUser.photo || '',
-            });
-            console.log('✅ Profile successfully updated in Firestore.');
+            dispatch(updateUser({userData: updatedUser}));
         } catch (error) {
-            console.error('❌ Failed to update profile:', error);
+            console.error('Failed to update profile:', error);
             Alert.alert('Error', 'Failed to save your profile changes.');
         }
     };
 
     const handlePickImage = async () => {
         if (!editMode) return;
-
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permissionResult.granted) {
-            Alert.alert("Permission required", "You need to allow access to media library to upload a photo.");
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+            Alert.alert('Permission required', 'Allow access to media library to upload a photo.');
             return;
         }
-
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 1,
+            quality: 1
         });
-
         if (!result.canceled) {
-            const selectedUri = result.assets[0].uri;
-
-            const base64 = await FileSystem.readAsStringAsync(selectedUri, {
-                encoding: FileSystem.EncodingType.Base64,
-            });
-
-            setTempUser((prev) => ({
-                ...prev,
-                profileImage: `data:image/jpeg;base64,${base64}`,
-            }));
+            const uri = result.assets[0].uri;
+            const base64 = await FileSystem.readAsStringAsync(uri, {encoding: FileSystem.EncodingType.Base64});
+            setTempUser(prev => ({...prev, profileImage: `data:image/jpeg;base64,${base64}`}));
         }
     };
 
@@ -97,14 +83,10 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
             Alert.alert('Error', 'Role name cannot be empty.');
             return;
         }
-
-        setTempUser((prev) => ({
+        setTempUser(prev => ({
             ...prev,
-            roles: prev.roles.map((r) =>
-                r.hashtag === hashtag ? { ...r, name: editedRoleName.trim() } : r
-            ),
+            roles: prev.roles.map(r => r.hashtag === hashtag ? {...r, name: editedRoleName.trim()} : r)
         }));
-
         setEditingRole(null);
         setEditedRoleName('');
         setActiveDropdownIndex(null);
@@ -112,73 +94,93 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
 
     const handleEditProfile = () => {
         if (!editMode) {
-            setTempUser({
-                ...mockUser,
-                profileImage: mockUser.photo,
-                availabilities: mockUser.availabilities || [],
-            });
+            setTempUser({...mockUser, profileImage: mockUser.photo, availabilities: mockUser.availabilities || []});
         } else {
             setTempUser(null);
         }
-        setEditMode((prev) => !prev);
+        setEditMode(prev => !prev);
     };
 
     const handleDeleteRole = (hashtagToDelete) => {
-        setTempUser((prev) => ({
-          ...prev,
-          roles: prev.roles.filter((r) => r.hashtag !== hashtagToDelete),
-          availabilities: prev.availabilities
-            ? prev.availabilities.filter((a) => a.roleHashtag !== hashtagToDelete)
-            : [],
+        // Update local view
+        setTempUser(prev => ({
+            ...prev,
+            roles: prev.roles.filter(r => r.hashtag !== hashtagToDelete),
+            availabilities: prev.availabilities?.filter(a => a.roleHashtag !== hashtagToDelete)
         }));
-      
-        setDeletedRoleHashtags((prev) => [...prev, hashtagToDelete]);
-      };
+        setDeletedRoleHashtags(prev => [...prev, hashtagToDelete]);
+    };
 
-      const handleAddNewRole = async () => {
-        const trimmedName = newRoleData.name.trim();
-        const trimmedHashtag = newRoleData.hashtag.trim();
-      
-        if (!trimmedName || !trimmedHashtag) {
-          Alert.alert('Error', 'Both role name and hashtag are required.');
-          return;
+    const handleAddNewRole = async () => {
+        const name = newRoleData.name.trim();
+        const hashtag = newRoleData.hashtag.trim();
+        if (!name || !hashtag) {
+            Alert.alert('Error', 'Both role name and hashtag are required.');
+            return;
         }
-      
-        const hashtagExistsInUser = tempUser.roles.some(
-          (r) => r.hashtag.toLowerCase() === trimmedHashtag.toLowerCase()
-        );
-      
-        if (hashtagExistsInUser) {
-          Alert.alert('Error', 'This hashtag is already used by one of your roles.');
-          return;
+        if (tempUser.roles.some(r => r.hashtag.toLowerCase() === hashtag.toLowerCase())) {
+            Alert.alert('Error', 'This hashtag is already used by one of your roles.');
+            return;
         }
-      
-        // Check global hashtags collection
-        const hashtagDoc = doc(db, 'hashtags', trimmedHashtag);
-        const snapshot = await getDoc(hashtagDoc);
+        const docRef = doc(db, 'hashtags', hashtag);
+        const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
-          Alert.alert('Error', 'This hashtag is already used by another user.');
-          return;
+            Alert.alert('Error', 'This hashtag is already used by another user.');
+            return;
         }
-      
-        const newRole = {
-          name: trimmedName,
-          hashtag: trimmedHashtag,
-        };
-      
-        //  Add to local temp user state
-        setTempUser((prev) => ({
-          ...prev,
-          roles: [...prev.roles, newRole],
-        }));
-      
-        //  Create hashtag document in Firestore
-        setNewHashtagsToCreate((prev) => [...prev, trimmedHashtag]);
-      
-        setNewRoleData({ name: '', hashtag: '' });
+        const newRole = {name, hashtag};
+        setTempUser(prev => ({...prev, roles: [...prev.roles, newRole]}));
+        setNewHashtagsToCreate(prev => [...prev, hashtag]);
+        setNewRoleData({name: '', hashtag: ''});
         setNewRoleModalVisible(false);
       };
 
+    const onBackPressHandler = () => {
+        if (editMode) {
+            Alert.alert('Discard Changes?', 'You have unsaved changes. Discard them?', [
+                {text: 'Cancel', style: 'cancel'},
+                {
+                    text: 'Discard', style: 'destructive', onPress: () => {
+                        setEditMode(false);
+                        setTempUser(null);
+                        navigation.goBack();
+                    }
+                }
+            ]);
+            return true;
+        }
+        return false;
+    };
+
+    const focusCallback = React.useCallback(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPressHandler);
+        const unsubscribe = navigation.addListener('beforeRemove', e => {
+            if (!editMode) return;
+            e.preventDefault();
+            Alert.alert('Discard Changes?', 'You have unsaved changes. Discard them?', [
+                {text: 'Cancel', style: 'cancel'},
+                {
+                    text: 'Discard', style: 'destructive', onPress: () => {
+                        setEditMode(false);
+                        setTempUser(null);
+                        navigation.dispatch(e.data.action);
+                    }
+                }
+            ]);
+        });
+        return () => {
+            backHandler.remove();
+            unsubscribe();
+        };
+    }, [editMode, navigation]);
+
+    useFocusEffect(focusCallback);
+
+    if (!mockUser) {
+        return (
+            <View style={defaultStyles.container}><Text>Loading your profile...</Text></View>
+        );
+    }
 
 
       const onBackPressHandler = () => {
@@ -252,79 +254,45 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
     return (
         <View style={defaultStyles.container}>
             <View style={styles.topBarContainer}>
-            <BackButton />
-          
-          
-            {!editMode && (
-            <TouchableOpacity
-                style={styles.logoutButton}
-                onPress={() => {
-                Alert.alert(
-                    'Log Out',
-                    'Are you sure you want to log out?',
-                    [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                        text: 'Log Out',
-                        style: 'destructive',
-                        onPress: async () => {
-                        try {
-                            await signOut(getAuth());
-                            setLoggedInUser(null);
-                        } catch (err) {
-                            console.error("❌ Logout failed:", err);
-                            Alert.alert('Error', 'Failed to log out.');
-                        }
-                        },
-                    },
-                    ]
-                );
-                }}
-            >
-                <Text style={styles.logoutText}>Log Out</Text>
-            </TouchableOpacity>
-            )}
-
-            </View>
-
-            <ScrollView contentContainerStyle={styles.container}>
-                {/* Back Button */}
-                {/* Profile Card */}
-                <View style={styles.profileCard}>
-
-                    <TouchableOpacity style={styles.editIcon} onPress={handleEditProfile}>
-                        <Image source={editIcon} style={{width: 15, height: 15, borderColor: ''}}/>
+                <BackButton/>
+                {!editMode && (
+                    <TouchableOpacity style={styles.logoutButton}
+                                      onPress={() => Alert.alert('Log Out', 'Are you sure?', [
+                                          {text: 'Cancel', style: 'cancel'},
+                                          {
+                                              text: 'Log Out', style: 'destructive', onPress: async () => {
+                                                  try {
+                                                      await signOut(getAuth());
+                                                      dispatch(updateUser(null));
+                                                  } catch (err) {
+                                                      Alert.alert('Error', 'Logout failed');
+                                                  }
+                                              }
+                                          }
+                                      ])}>
+                        <Text style={styles.logoutText}>Log Out</Text>
                     </TouchableOpacity>
-
+                )}
+            </View>
+            <ScrollView contentContainerStyle={styles.container}>
+                <View style={styles.profileCard}>
+                    <TouchableOpacity style={styles.editIcon} onPress={handleEditProfile}>
+                        <Image source={editIcon} style={{width: 15, height: 15}}/>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={handlePickImage} disabled={!editMode}>
                         <Image
-                            source={
-                                editMode
-                                    ? tempUser?.profileImage
-                                        ? {uri: tempUser.profileImage} //  In edit mode and a new image was selected → show it
-                                        : defaultPhoto                   //  In edit mode but no new image selected yet → show default
-                                    : mockUser.photo
-                                        ? {uri: mockUser.photo}         //  In view mode and a saved photo exists → show it
-                                        : defaultPhoto                    //  In view mode and no saved photo exists → show default
-                            }
+                            source={editMode ? (tempUser.profileImage ? {uri: tempUser.profileImage} : defaultPhoto)
+                                : (mockUser.photo ? {uri: mockUser.photo} : defaultPhoto)}
                             style={styles.profileImage}
                         />
-
                     </TouchableOpacity>
-
-
                     <Text style={styles.name}>{mockUser.name}</Text>
                     <Text style={styles.hashtag}>{mockUser.hashtag}</Text>
-                    {/*The divider*/}
                     <View style={styles.divider}/>
-
                     <Text style={styles.rolesTitle}>User Roles</Text>
-
-
-                    {(editMode ? tempUser?.roles : mockUser.roles).map((role, index) => (
-                        <View key={index} style={styles.roleContainer}>
+                    {(editMode ? tempUser.roles : mockUser.roles).map((role, idx) => (
+                        <View key={idx} style={styles.roleContainer}>
                             <Text style={styles.hashtagText}>{role.hashtag}</Text>
-
                             <View style={styles.roleCard}>
                                 {editMode ? (
                                     editingRole === role.hashtag ? (
@@ -340,43 +308,31 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
                                     ) : (
                                         <>
                                             <TouchableOpacity
-                                                onPress={() =>
-                                                    setActiveDropdownIndex(activeDropdownIndex === index ? null : index)
-                                                }
+                                                onPress={() => setActiveDropdownIndex(activeDropdownIndex === idx ? null : idx)}
                                                 style={styles.roleTouchable}
                                             >
                                                 <Text style={styles.roleText}>{role.name}</Text>
                                                 <Ionicons name="chevron-down" size={18} color="#555"
                                                           style={styles.dropdownIcon}/>
                                             </TouchableOpacity>
-
-                                            {activeDropdownIndex === index && (
+                                            {activeDropdownIndex === idx && (
                                                 <View style={styles.dropdownMenu}>
-                                                    <TouchableOpacity
-                                                        onPress={() => {
-                                                            setEditingRole(role.hashtag);
-                                                            setEditedRoleName(role.name);
-                                                        }}
-                                                    >
+                                                    <TouchableOpacity onPress={() => {
+                                                        setEditingRole(role.hashtag);
+                                                        setEditedRoleName(role.name);
+                                                    }}>
                                                         <Text style={styles.editText}>Edit Role Name</Text>
                                                     </TouchableOpacity>
                                                     <TouchableOpacity
-                                                        onPress={() => {
-                                                            Alert.alert(
-                                                                'Confirm Delete',
-                                                                'Are you sure you want to delete this role?',
-                                                                [
-                                                                    {text: 'Cancel', style: 'cancel'},
-                                                                    {
-                                                                        text: 'Delete',
-                                                                        style: 'destructive',
-                                                                        onPress: () => handleDeleteRole(role.hashtag),
-                                                                    },
-                                                                ]
-                                                            );
-                                                        }}
-                                                    >
-                                                        <Text style={styles.deleteText}>Delete Profile</Text>
+                                                        onPress={() => Alert.alert('Confirm Delete', 'Delete this role?', [
+                                                            {text: 'Cancel', style: 'cancel'},
+                                                            {
+                                                                text: 'Delete',
+                                                                style: 'destructive',
+                                                                onPress: () => handleDeleteRole(role.hashtag)
+                                                            }
+                                                        ])}>
+                                                        <Text style={styles.deleteText}>Delete Role</Text>
                                                     </TouchableOpacity>
                                                 </View>
                                             )}
@@ -388,156 +344,88 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
                             </View>
                         </View>
                     ))}
-
-
                 </View>
             </ScrollView>
-
             {editMode && (
                 <View style={styles.footerButtons}>
-                    <TouchableOpacity
-                        style={styles.floatingButton}
-                        onPress={() => setNewRoleModalVisible(true)}
-                    >
+                    <TouchableOpacity style={styles.floatingButton} onPress={() => setNewRoleModalVisible(true)}>
                         <Ionicons name="add" size={40} color="#fff"/>
                     </TouchableOpacity>
-
-
-
                     <TouchableOpacity
-                        style={[styles.confirmButton, confirmDisabled && { opacity: 0.6 }]}
+                        style={[styles.confirmButton, confirmDisabled && {opacity: 0.6}]}
                         disabled={confirmDisabled}
                         onPress={async () => {
-                            setConfirmDisabled(true); // Start cooldown
-
-                            let updatedTempUser = { ...tempUser };
-
+                            setConfirmDisabled(true);
+                            let updated = {...tempUser};
                             if (editingRole && editedRoleName.trim()) {
-                            updatedTempUser.roles = updatedTempUser.roles.map((r) =>
-                                r.hashtag === editingRole ? { ...r, name: editedRoleName.trim() } : r
-                            );
+                                updated.roles = updated.roles.map(r => r.hashtag === editingRole ? {
+                                    ...r,
+                                    name: editedRoleName.trim()
+                                } : r);
                             }
-
-                            if (tempUser?.profileImage) {
-                            updatedTempUser.photo = tempUser.profileImage;
+                            if (tempUser.profileImage) updated.photo = tempUser.profileImage;
+                            await saveProfileToFirestore(updated);
+                            for (const tag of newHashtagsToCreate) {
+                                try {
+                                    await setDoc(doc(db, 'hashtags', tag), {
+                                        value: tag,
+                                        type: 'hashtag',
+                                        createdAt: new Date().toISOString()
+                                    });
+                                } catch (e) {
+                                    console.warn(e);
+                                }
                             }
+                            for (const tag of deletedRoleHashtags) {
+                                try {
+                                    await deleteRoleData(tag, user.hashtag);
+                                } catch {
+                                }
 
-                            // Save to Firestore
-                            await saveProfileChanges({
-                            ...updatedTempUser,
-                            availabilities: updatedTempUser.availabilities || [],
-                            });
-
-                            // Create new hashtags
-                            for (const newHashtag of newHashtagsToCreate) {
-                            const hashtagDoc = doc(db, 'hashtags', newHashtag);
-                            try {
-                                await setDoc(hashtagDoc, {
-                                value: newHashtag,
-                                type: 'hashtag',
-                                createdAt: new Date().toISOString(),
-                                });
-                            } catch (err) {
-                                console.error(`❌ Failed to create hashtag "${newHashtag}":`, err);
                             }
-                            }
+                            // Reload fresh user
+                            const fresh = await loadCompleteUserData(updated.hashtag);
 
-                            // Delete roles and associated data
-                            for (const hashtag of deletedRoleHashtags) {
-                            try {
-                                await deleteRoleData(hashtag);
-                            } catch (err) {
-                                console.warn(`⚠️ Failed to delete data for hashtag ${hashtag}:`, err);
-                            }
-                            }
-
-                            // Reload fresh data from Firestore
-                            const freshData = await loadCompleteUserData(updatedTempUser.hashtag);
-                            setLoggedInUser(freshData);
-                            setMockUser(freshData);
-
-                            // Reset state
+                            dispatch(fetchUser(user.hashtag))
+                            setMockUser(user);
+                            // reset
                             setTempUser(null);
                             setEditMode(false);
                             setEditingRole(null);
                             setEditedRoleName('');
                             setDeletedRoleHashtags([]);
                             setNewHashtagsToCreate([]);
-
-                            // Re-enable button after 5 seconds
                             setTimeout(() => setConfirmDisabled(false), 5000);
                         }}
                         >
                         <Text style={styles.confirmText}>Confirm</Text>
-                        </TouchableOpacity>
-
-
-
-
-
+                    </TouchableOpacity>
                 </View>
             )}
-            {showOptions && (
-                <View style={styles.modalOverlay}>
-                    <View style={styles.optionsBox}>
-                        <Text style={styles.optionTitle}>{selectedRole?.name}</Text>
-
-                        <TouchableOpacity onPress={() => {
-                            setEditingRole(selectedRole.hashtag);
-                            setEditedRoleName(selectedRole.name);
-                            setShowOptions(false);
-                            setActiveDropdownIndex(null);
-                        }}>
-                            <Text style={styles.optionText}>Edit Role Name</Text>
-                        </TouchableOpacity>
-
-
-                        <TouchableOpacity onPress={() => {
-              
-                            alert(`Delete "${selectedRole.name}"`);
-                            setShowOptions(false);
-                        }}>
-                            <Text style={[styles.optionText, {color: 'red'}]}>Delete Role</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity onPress={() => setShowOptions(false)}>
-                            <Text style={[styles.optionText, {color: '#888'}]}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            )}
-
-
             {newRoleModalVisible && (
                 <View style={styles.modalOverlay}>
                     <View style={styles.optionsBox}>
                         <Text style={styles.optionTitle}>Create New Role</Text>
-
                         <TextInput
                             style={styles.modalInput}
                             placeholder="Role Name"
                             value={newRoleData.name}
-                            onChangeText={(text) => setNewRoleData({...newRoleData, name: text})}
+                            onChangeText={text => setNewRoleData({...newRoleData, name: text})}
                         />
                         <TextInput
                             style={styles.modalInput}
                             placeholder="Hashtag"
                             value={newRoleData.hashtag}
-                            onChangeText={(text) => setNewRoleData({...newRoleData, hashtag: text})}
+                            onChangeText={text => setNewRoleData({...newRoleData, hashtag: text})}
                         />
-
                         <View style={styles.modalButtons}>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setNewRoleModalVisible(false);
-                                    setNewRoleData({name: '', hashtag: ''});
-                                }}
-                            >
+                            <TouchableOpacity onPress={() => {
+                                setNewRoleModalVisible(false);
+                                setNewRoleData({name: '', hashtag: ''});
+                            }}>
                                 <Text style={styles.modalCancel}>Cancel</Text>
                             </TouchableOpacity>
-
-
-                            <TouchableOpacity onPress={() => handleAddNewRole()}>
+                            <TouchableOpacity onPress={handleAddNewRole}>
                                 <Text style={styles.modalConfirm}>Add Role</Text>
                             </TouchableOpacity>
                         </View>
@@ -546,7 +434,7 @@ const ProfileScreen = ({ user, setLoggedInUser }) => {
             )}
         </View>
     );
-};
+}
 
 const styles = StyleSheet.create({
     roleInput: {
@@ -771,9 +659,9 @@ const styles = StyleSheet.create({
         right: 0,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 10, 
-      },
-      
+        gap: 10,
+    },
+
 
     plusButton: {
 
@@ -872,17 +760,17 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 10,
-      },
-      
-      logoutButton: {
+    },
+
+    logoutButton: {
         padding: 10,
-      },
-      
-      logoutText: {
+    },
+
+    logoutText: {
         color: '#80004d',
         fontWeight: 'bold',
         fontSize: 14,
-      },
+    },
 });
 
-export default ProfileScreen;
+export default UserProfileScreen;

@@ -3,30 +3,45 @@ import {colors} from "../../colors";
 import {defaultStyles} from "../../default-styles";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import {useDispatch, useSelector} from "react-redux";
-import {updateGroup} from "../../redux/slices/groupSlice";
-import {useState} from "react";
+import {removeUserFromGroup, updateGroup, updateGroupInFirestore} from "../../redux/slices/groupSlice";
+import {useEffect, useState} from "react";
 import ConfirmActionModal from "../ConfirmActionModal";
+import {fetchUser, removeGroupFromUserInFirebase} from "../../redux/slices/userSlice";
+import {doc, getDoc} from "firebase/firestore";
+import {db} from "../../firebaseconfig";
 
-export default function GroupUserListCard({member, isOwner, groupId}) {
+export default function GroupUserListCard({memberRef, isOwner, groupId}) {
 
     const dispatch = useDispatch();
 
-    const group = useSelector(state => state.groups).find(group => group.id === groupId);
+    const group = useSelector(state => state.groups.items).find(group => group.id === groupId);
+
+    const user = useSelector(state => state.user.data);
+
+    const isMine = memberRef.userReference === `/users/${user.hashtag}`;
+    useEffect(() => {
+        const fetchMember = async () => {
+            try {
+                const userDoc = doc(db, memberRef.userReference);
+                const snapshot = await getDoc(userDoc);
+                if (snapshot.exists()) {
+                    setMember({...snapshot.data(), userReference: memberRef.userReference});
+                } else {
+                    console.warn(`No user found at ${memberRef.userReference}`);
+                }
+            } catch (error) {
+                console.error('Error fetching member:', error);
+            }
+        };
+        fetchMember();
+    }, [memberRef]);
+
+    const [member, setMember] = useState({name: ''});
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-
     const onDeleteMember = () => {
-        const updatedGroupMembers = group.groupMembers.filter(
-            (groupMember) => groupMember.id !== member.id
-        );
-
-        const updatedGroup = {
-            ...group,
-            groupMembers: updatedGroupMembers
-        };
-
-        dispatch(updateGroup(updatedGroup));
+        dispatch(removeUserFromGroup({groupId, userHashtag: member.hashtag}));
     };
 
     return (
@@ -34,7 +49,7 @@ export default function GroupUserListCard({member, isOwner, groupId}) {
             {showConfirmModal ?
                 <ConfirmActionModal modalVisible={showConfirmModal} setModalVisible={setShowConfirmModal}
                                     onClick={onDeleteMember}
-                                    title={`Proceed into deletion of user '${member.username}'?`}/>
+                                    title={`Proceed into deletion of user '${member.name}'?`}/>
                 : null
             }
             <View style={{
@@ -62,7 +77,7 @@ export default function GroupUserListCard({member, isOwner, groupId}) {
                         ]}>{member.name}</Text>
                 </View>
                 {
-                    isOwner ?
+                    isOwner && isMine === false ?
                         <View style={{flexDirection: "row", gap: 4}}>
                             <TouchableOpacity onPress={() => setShowConfirmModal(true)}>
                                 <MaterialIcons name={"delete"} size={20} style={{color: colors.mediumGray}}/>

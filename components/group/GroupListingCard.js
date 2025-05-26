@@ -13,14 +13,14 @@ export default function GroupListingCard({groupId}) {
             params: {groupId: group.id}
         });
     }
-    const group = useSelector(state => state.groups).find(group => group.id === groupId);
+    const group = useSelector(state => state.groups.items).find(group => group.id === groupId);
 
     return (
         <View style={{borderRadius: 20}} boxShadow={"0px 3px 3px rgba(0, 0, 0, 0.3)"}>
             <View style={styles.container} boxShadow={"inset -3px -3px 1px rgba(124,1,82,1)"}>
                 <View style={styles.titleWrapper}>
-                    <Text style={defaultStyles.title}>{group.groupName} </Text>
-                    <Text style={defaultStyles.subtitle}>{group.groupHashtag}</Text>
+                    <Text style={defaultStyles.title}>{group.name} </Text>
+                    <Text style={defaultStyles.subtitle}>{group.id}</Text>
                 </View>
                 <View style={styles.groupMembersDetails}>
                     <View style={styles.groupMembers}>
@@ -30,7 +30,7 @@ export default function GroupListingCard({groupId}) {
                             style={styles.groupMembers.icon}
                         />
                         <Text
-                            style={styles.groupMembersDetails.text}>{group?.groupMembers.length ?? 0}</Text>
+                            style={styles.groupMembersDetails.text}>{group?.groupMembers?.length ?? 0}</Text>
                     </View>
                     <TouchableOpacity onPress={() => openGroupDetails(group)}>
                         <View style={styles.groupDetails}>

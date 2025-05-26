@@ -428,9 +428,10 @@ users:
     {
       id: "string",               // Unique chat ID
       participants: ["hashtag1", "hashtag2"],
-      isRead:{
-      hashtag1:bool,
-      hashtag2:bool
+      isRead: 
+      {
+        hashtag1: 0 | 1,         // 0 or 1 to indicate if user has read the last message
+        hashtag2: 0 | 1          // 0 or 1 to indicate if user has read the last message
       },             // 0 or 1 to indicate if user has read the last message
       messages: [
         {

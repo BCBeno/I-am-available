@@ -5,26 +5,42 @@ import {defaultStyles} from "../../default-styles";
 import BackButton from "../../components/BackButton";
 import {colors} from "../../colors";
 import Button from "../../components/Button";
+import {db} from '../../firebaseconfig';
 import {useDispatch, useSelector} from "react-redux";
 import {updateGroup} from "../../redux/slices/groupSlice";
+import {addDoc, collection, setDoc} from "firebase/firestore";
 
 export default function GroupAnnouncementScreen() {
-    const [announcementText, setAnnouncementText] = useState("");
+    const [subject, setSubject] = useState("");
+    const [title, setTitle] = useState("");
 
     const navigation = useNavigation();
 
     const route = useRoute();
     const {groupId} = route.params;
 
-    const group = useSelector(state => state.groups).find(group => group.id === groupId);
+    const group = useSelector(state => state.groups.items).find(group => group.id === groupId);
 
-    const sendAnnouncement = () => {
-        if (announcementText.trim()) {
-            setAnnouncementText("");
+    const sendAnnouncement = async () => {
+        const announcement = {
+            announcement: "New announcement from group",
+            subject: subject,
+            dateTime: new Date().toISOString(),
+            group: `/groups/${groupId}`,
+            title: title,
+            type: "announcement"
+        }
+
+        const notificationCol = collection(db, 'notifications');
+        await addDoc(notificationCol, announcement);
+
+        if (subject.trim() && title.trim()) {
+            setSubject("");
+            setTitle("");
             navigation.goBack();
             alert("Announcement sent!");
         } else {
-            alert("Please enter an announcement.");
+            alert("Please enter both title and message.");
         }
     };
 
@@ -37,6 +53,11 @@ export default function GroupAnnouncementScreen() {
                     <Text style={defaultStyles.subtitle}>{group.groupHashtag}</Text>
                 </View>
 
+                <TextInput style={defaultStyles.input}
+                           placeholder={"Announcement Title"}
+                           value={title}
+                           onChangeText={(text) => setTitle(text)}
+                />
                 <TextInput
                     style={[
                         defaultStyles.input,
@@ -49,9 +70,9 @@ export default function GroupAnnouncementScreen() {
                             paddingHorizontal: 16,
                         },
                     ]}
-                    placeholder="Write your announcement here..."
-                    value={announcementText}
-                    onChangeText={setAnnouncementText}
+                    placeholder="Write your message here..."
+                    value={subject}
+                    onChangeText={(text) => setSubject(text)}
                 />
 
                 <Button text="Send Announcement" onClick={sendAnnouncement}/>

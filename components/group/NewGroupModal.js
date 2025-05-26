@@ -3,7 +3,7 @@ import {Button, Modal, StyleSheet, Text, TouchableWithoutFeedback, View} from 'r
 import AddButton from "../AddButton";
 import NewGroupForm from "./NewGroupForm";
 
-export default function NewGroupModal({modalVisible, setModalVisible}) {
+export default function NewGroupModal({modalVisible, setModalVisible, edit, group}) {
     const onClose = () => {
         setModalVisible(false);
     }
@@ -12,16 +12,16 @@ export default function NewGroupModal({modalVisible, setModalVisible}) {
         <View style={styles.container}>
             <AddButton onPress={() => setModalVisible(true)} style={styles.button}></AddButton>
             <Modal
-                animationType="fade" // Tipo de animação do modal
-                transparent={true} // Define se o fundo será transparente
-                visible={modalVisible} // Controla a visibilidade do modal
-                onRequestClose={onClose} // Fecha o modal ao pressionar o botão "back" no Android
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={onClose}
             >
                 <TouchableWithoutFeedback onPress={onClose}>
                     <View style={styles.modalContainer}>
                         <TouchableWithoutFeedback>
                             <View style={styles.modalContent}>
-                                <NewGroupForm onClose={onClose}/>
+                                <NewGroupForm onClose={onClose} group={group} edit={edit}/>
                             </View>
                         </TouchableWithoutFeedback>
                     </View>

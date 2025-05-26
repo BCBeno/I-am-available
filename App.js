@@ -24,7 +24,7 @@ import { loadCompleteUserData } from './data/userDataLoader';
 import { collection, query, where, getDocs, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebaseconfig';
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
+//import * as Device from 'expo-device';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -36,10 +36,10 @@ Notifications.setNotificationHandler({
 });
 
 async function registerForPushNotificationsAsync() {
-  if (!Device.isDevice) {
-    console.warn('⚠️ Must use a physical device for Push Notifications');
-    return null;
-  }
+  // if (!Device.isDevice) {
+  //   console.warn('⚠️ Must use a physical device for Push Notifications');
+  //   return null;
+  // }
 
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();

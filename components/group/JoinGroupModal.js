@@ -1,17 +1,38 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {Modal, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View} from 'react-native';
 import Button from "../Button";
 import {colors} from "../../colors";
 import {defaultStyles} from "../../default-styles";
 import {useDispatch, useSelector} from "react-redux";
+import {updateGroupInFirestore} from "../../redux/slices/groupSlice";
 
 export default function JoinGroupModal({modalVisible, setModalVisible, groupId}) {
 
     const dispatch = useDispatch();
-    const group = useSelector(state => state.groups).find(group => group.id === groupId);
+    const group = useSelector(state => state.groups.items).find(group => group.id === groupId);
+    const user = useSelector(state => state.user.data);
+
+    const [message, setMessage] = useState('');
 
     const sendRequest = () => {
-        // send the request to the group
+        const request = {
+            hashtag: user.hashtag,
+            message: message,
+        }
+
+        if (group?.joinRequests?.some(r => r.hashtag === user.hashtag)) {
+            alert("You already sent a request to join this group");
+            onClose()
+            return;
+        }
+
+        const newGroup = {
+            ...group,
+            joinRequests: [...group?.joinRequests, request],
+        }
+
+        dispatch(updateGroupInFirestore(newGroup));
+
         onClose()
         alert("Request sent!")
     }
@@ -51,6 +72,7 @@ export default function JoinGroupModal({modalVisible, setModalVisible, groupId})
                                             textAlignVertical: "top",
                                         }
                                     ]}
+                                    onChangeText={(text) => setMessage(text)}
                                     placeholder={"Type a message"}
                                     placeholderTextColor={colors.mediumGray}
                                     multiline
@@ -65,7 +87,8 @@ export default function JoinGroupModal({modalVisible, setModalVisible, groupId})
             </Modal>
         </View>
     );
-};
+}
+;
 
 const styles = StyleSheet.create({
     container: {
