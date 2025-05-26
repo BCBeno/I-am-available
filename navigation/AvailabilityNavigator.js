@@ -8,48 +8,46 @@ import LocationDetailsScreen from '../screens/LocationDetailsScreen';
 
 const Stack = createStackNavigator();
 
-export default function AvailabilityNavigator({ refreshTrigger, setLoggedInUser,user }) {
+export default function AvailabilityNavigator({refreshTrigger, setLoggedInUser, user}) {
     return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="AvailabilityMain">
-        {({ navigation, route }) => (
-            <AvailabilityScreen
-            user={user} 
-            navigation={navigation}
-            route={route}
-            refreshTrigger={refreshTrigger}
-            setLoggedInUser={setLoggedInUser}
-            />
-        )}
-        </Stack.Screen>
+        <Stack.Navigator screenOptions={{headerShown: false}}>
+            <Stack.Screen name="AvailabilityMain">
+                {({navigation, route}) => (
+                    <AvailabilityScreen
+                        user={user}
+                        navigation={navigation}
+                        route={route}
+                        refreshTrigger={refreshTrigger}
+                        setLoggedInUser={setLoggedInUser}
+                    />
+                )}
+            </Stack.Screen>
 
 
-  
-        <Stack.Screen name="OwnerAvailabilityDetails">
-        {(props) => (
-            <OwnerAvailabilityDetailsScreen
-            {...props}
-            user={user} 
-            setLoggedInUser={setLoggedInUser}
-            />
-        )}
-        </Stack.Screen>
+            <Stack.Screen name="OwnerAvailabilityDetails">
+                {(props) => (
+                    <OwnerAvailabilityDetailsScreen
+                        {...props}
+                        user={user}
+                        setLoggedInUser={setLoggedInUser}
+                    />
+                )}
+            </Stack.Screen>
 
 
-  
-        <Stack.Screen name="CreateAvailability">
-        {(props) => (
-            <CreateAvailabilityScreen
-            {...props}
-            user={user}
-            setLoggedInUser={setLoggedInUser}
-            />
-        )}
-        </Stack.Screen>
+            <Stack.Screen name="CreateAvailability">
+                {(props) => (
+                    <CreateAvailabilityScreen
+                        {...props}
+                        user={user}
+                        setLoggedInUser={setLoggedInUser}
+                    />
+                )}
+            </Stack.Screen>
 
-  
-        <Stack.Screen name="LocationDetails" component={LocationDetailsScreen} />
-      </Stack.Navigator>
+
+            <Stack.Screen name="LocationDetails" component={LocationDetailsScreen}/>
+        </Stack.Navigator>
     );
-  }
+}
   
