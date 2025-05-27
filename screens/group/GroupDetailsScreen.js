@@ -97,6 +97,15 @@ export default function GroupDetailsScreen() {
         alert("Group deleted successfully")
     }
 
+    // Add this guard clause:
+    if (!groupData) {
+        return (
+            <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                <Text style={{color: 'gray', fontSize: 16}}>Group not found.</Text>
+            </View>
+        );
+    }
+
     return (<View style={defaultStyles.container}>
         {viewJoinGroupModal ? <JoinGroupModal
             modalVisible={viewJoinGroupModal}
