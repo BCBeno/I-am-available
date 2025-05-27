@@ -308,7 +308,7 @@ export default function NotificationsScreen({ user, setLoggedInUser }) {
                     <NotificationCard
                         key={notification.id}
                         title={notification.title}
-                        subject={notification.subject}
+                        subject={notification.announcement}
                         group={notification.group.startsWith("/groups/") ? `#${notification.group.split("/").pop()}` : notification.group}
                         dateTime={format(new Date(notification.dateTime), "dd-MM-yyyy HH:mm")}
                         onPressDetails={() =>

@@ -12,6 +12,8 @@ import {useDispatch} from "react-redux";
 import {fetchUser} from "../redux/slices/userSlice";
 import GroupDetailsScreen from "../screens/group/GroupDetailsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import ChatDetailsScreen from "../screens/ChatDetailsScreen";
+import StudentAvailabilityDetailsScreen from "../screens/StudentAvailabilityDetailsScreen";
 
 const Tab = createBottomTabNavigator();
 const RootStack = createStackNavigator();
@@ -35,9 +37,8 @@ function Tabs({user, setLoggedInUser}) {
                 />
             )}
         >
-            <Tab.Screen name="Groups">{() => <GroupStack/>}</Tab.Screen>
-
-            <Tab.Screen name="Availability" key={refreshTrigger}>
+            <Tab.Screen name="Groups" component={GroupStack} />
+            <Tab.Screen name="Availability">
                 {() => (
                     <AvailabilityNavigator
                         user={user}
@@ -46,10 +47,9 @@ function Tabs({user, setLoggedInUser}) {
                     />
                 )}
             </Tab.Screen>
-
-
-            <Tab.Screen name="Notifications">{() => <NotificationNavigator user={user}/>}</Tab.Screen>
-
+            <Tab.Screen name="Notifications">
+                {() => <NotificationNavigator user={user}/>}
+            </Tab.Screen>
             <Tab.Screen name="Chat">
                 {() => <ChatNavigator user={user}/>}
             </Tab.Screen>
@@ -68,26 +68,30 @@ export default function MainTabNavigator({user, setLoggedInUser}) {
 
     return (
         <RootStack.Navigator screenOptions={{headerShown: false}}>
-            <RootStack.Screen name="Tabs">
-                {() => (
+            <RootStack.Screen
+                name="Tabs"
+                children={() => (
                     <Tabs
-                        key={user?.photo} //  This forces remount when photo changes
+                        key={user?.photo}
                         user={user}
                         setLoggedInUser={setLoggedInUser}
                     />
                 )}
-            </RootStack.Screen>
-            <RootStack.Screen name="ProfileFlow">
-                {({route}) => (
+            />
+            <RootStack.Screen
+                name="ProfileFlow"
+                children={({route}) => (
                     <ProfileFlow
                         route={route}
                         user={user}
                         setLoggedInUser={setLoggedInUser}
                     />
                 )}
-            </RootStack.Screen>
+            />
             <RootStack.Screen name="GroupDetails" component={GroupDetailsScreen}/>
             <RootStack.Screen name="Profile" component={ProfileScreen}/>
+            <RootStack.Screen name="ChatDetails" component={ChatDetailsScreen}/>
+            <RootStack.Screen name="StudentAvailabilityDetails" component={StudentAvailabilityDetailsScreen}/>
         </RootStack.Navigator>
     );
 }
