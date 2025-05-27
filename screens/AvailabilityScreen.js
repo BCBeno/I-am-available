@@ -1,5 +1,5 @@
 //AvailabilityScreen.js
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 import {
     View,
     Text,
@@ -15,21 +15,34 @@ import TopBar from '../components/TopBar';
 import ClockIcon from '../assets/Clock.png';
 import CalendarIcon from '../assets/Calendar.png';
 import {useSelector} from "react-redux";
+import {collection, getDocs, query, where} from "firebase/firestore";
+import {db} from "../firebaseconfig";
 
 export default function AvailabilityScreen({navigation, route, refreshTrigger}) {
     const [availabilities, setAvailabilities] = useState([]);
 
     const user = useSelector(state => state.user.data);
 
-    useFocusEffect(
-        useCallback(() => {
-            setAvailabilities(user?.availabilities || []);
+    // useFocusEffect(
+    //     useCallback(() => {
+    //         setAvailabilities(user?.availabilities || []);
+    //
+    //         if (route?.params?.refreshed) {
+    //             navigation.setParams({refreshed: false});
+    //         }
+    //     }, [route?.params?.refreshed, refreshTrigger, user])
+    // );
 
-            if (route?.params?.refreshed) {
-                navigation.setParams({refreshed: false});
-            }
-        }, [route?.params?.refreshed, refreshTrigger, user])
-    );
+    useEffect(() => {
+        const fetchAvailabilities = async () => {
+            const q = query(collection(db, 'availabilities'), where('user', '==', user.hashtag));
+            const snap = await getDocs(q);
+            const data = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+            setAvailabilities(data);
+        };
+
+        fetchAvailabilities();
+    }, []);
 
     const renderItem = ({item, index}) => {
         const isRepeating = !!item.days;
