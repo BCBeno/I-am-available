@@ -105,7 +105,8 @@ export default function GroupDetailsScreen() {
                                                       text={"Are you sure you want to delete this group?"}
                                                       title={"Delete Group"}/> : null}
         {viewInviteModal ?
-            <InviteGroupModal setModalVisible={setViewInviteModal} modalVisible={viewInviteModal}/> : null}
+            <InviteGroupModal setModalVisible={setViewInviteModal} modalVisible={viewInviteModal}
+                              group={group}/> : null}
         {viewEditGroupModal ? <NewGroupModal
             modalVisible={viewEditGroupModal}
             setModalVisible={setViewEditGroupModal}
