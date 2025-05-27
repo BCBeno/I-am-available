@@ -23,15 +23,24 @@ export default function AvailabilityScreen({navigation, route, refreshTrigger}) 
 
     const user = useSelector(state => state.user.data);
 
-    // useFocusEffect(
-    //     useCallback(() => {
-    //         setAvailabilities(user?.availabilities || []);
-    //
-    //         if (route?.params?.refreshed) {
-    //             navigation.setParams({refreshed: false});
-    //         }
-    //     }, [route?.params?.refreshed, refreshTrigger, user])
-    // );
+    
+    useFocusEffect(
+        useCallback(() => {
+          const fetchAvailabilities = async () => {
+            const q = query(collection(db, 'availabilities'), where('user', '==', user.hashtag));
+            const snap = await getDocs(q);
+            const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAvailabilities(data);
+          };
+      
+          fetchAvailabilities();
+      
+          if (route?.params?.refreshed) {
+            navigation.setParams({ refreshed: false });
+          }
+        }, [refreshTrigger, route?.params?.refreshed])
+      );
+      
 
     useEffect(() => {
         const fetchAvailabilities = async () => {

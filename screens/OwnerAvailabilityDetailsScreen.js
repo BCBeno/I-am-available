@@ -33,7 +33,8 @@ export default function OwnerAvailabilityDetailsScreen({route, navigation, setLo
             await deleteDoc(doc(db, 'availabilities', availability.id));
             const updatedUser = {
                 ...user,
-                availabilities: user.availabilities.filter(a => a.id !== availability.id)
+                availabilities: user.availabilities?.filter(a => a.id !== availability.id) || []
+
             };
             setLoggedInUser(updatedUser);
             navigation.navigate('AvailabilityMain', {refreshed: true});

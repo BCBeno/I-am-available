@@ -1,3 +1,4 @@
+//UserProfileScreen.js
 import React, {useState, useEffect} from 'react';
 import {
     View,
@@ -51,7 +52,9 @@ const UserProfileScreen = () => {
     const saveProfileToFirestore = async (updatedUser) => {
         try {
             const userRef = doc(db, 'users', updatedUser.hashtag);
-            dispatch(updateUser({userData: updatedUser}));
+            const { availabilities, ...cleanedUser } = updatedUser;//No longer adds the availabilities to the user collection
+            dispatch(updateUser({ userData: cleanedUser }));
+            
         } catch (error) {
             console.error('Failed to update profile:', error);
             Alert.alert('Error', 'Failed to save your profile changes.');
