@@ -141,7 +141,7 @@ export default function ChatDetailsScreen({route, navigation}) {
                 <View>
                     <TouchableOpacity
                         onPress={() =>
-                            navigation.navigate("Profile", {hashtag: chat.otherParticipantHashtag})
+                            navigation.navigate("Profile", {userHashtag: chat.otherParticipantHashtag})
                         }
                     >
                         <Text style={styles.chatName}>{chat.otherParticipantName}</Text>

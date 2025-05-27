@@ -20,25 +20,29 @@ export default function GroupDetailsScreen() {
     const navigation = useNavigation()
 
     const route = useRoute();
-    const {groupId} = route.params;
+    const { group, groupId } = route.params;
 
     const dispatch = useDispatch();
 
-    const group = useSelector(state => state.groups.items).find(group => group.id === groupId);
+    const groupFromStore = useSelector(state => state.groups.items).find(g => g.id === (groupId || group?.id));
+    const groupData = group || groupFromStore;
 
     const user = useSelector(state => state.user.data);
 
-    const [isOwner, setIsOwner] = useState(group.ownerId === user.hashtag);
-
+    const [isOwner, setIsOwner] = useState(groupData?.ownerId === user.hashtag);
     const [isMember, setIsMember] = useState(false);
 
     useEffect(() => {
-        setIsMember(group.groupMembers.some(member => member.userReference === `/users/${user.hashtag}`));
-    }, [group]);
+        if (groupData) {
+            setIsMember(groupData.groupMembers.some(member => member.userReference === `/users/${user.hashtag}`));
+        }
+    }, [groupData]);
 
     const [viewJoinGroupModal, setViewJoinGroupModal] = useState(false);
 
-    const [receiveNotification, setReceiveNotification] = useState(group.groupMembers.find(member => member.userReference === `/users/${user.hashtag}`)?.notifications ?? false);
+    const [receiveNotification, setReceiveNotification] = useState(
+        groupData?.groupMembers.find(member => member.userReference === `/users/${user.hashtag}`)?.notifications ?? false
+    );
 
     const [viewInviteModal, setViewInviteModal] = useState(false);
 
@@ -47,24 +51,24 @@ export default function GroupDetailsScreen() {
     const [viewConfirmDeleteModal, setViewConfirmDeleteModal] = useState(false);
 
     const joinGroup = () => {
-        if (!group.autoAdmission) {
+        if (!groupData.autoAdmission) {
             setViewJoinGroupModal(true);
             return;
         }
-        dispatch(addUserToGroup({groupId: group.id, userHashtag: user.hashtag, notifications: false}));
+        dispatch(addUserToGroup({groupId: groupData.id, userHashtag: user.hashtag, notifications: false}));
         setIsMember(true)
     }
 
     const leftGroup = () => {
         dispatch(removeUserFromGroup({
-            groupId: group.id, userHashtag: user.hashtag
+            groupId: groupData.id, userHashtag: user.hashtag
         }));
         navigation.goBack()
     }
 
     const switchNotifications = () => {
 
-        const updatedGroupMembers = group.groupMembers.map(member => {
+        const updatedGroupMembers = groupData.groupMembers.map(member => {
 
             if (member.userReference === `/users/${user.hashtag}`) {
                 return {
@@ -76,7 +80,7 @@ export default function GroupDetailsScreen() {
         });
 
         const updatedGroup = {
-            ...group, groupMembers: updatedGroupMembers
+            ...groupData, groupMembers: updatedGroupMembers
         };
         setReceiveNotification(!receiveNotification)
 
@@ -84,7 +88,7 @@ export default function GroupDetailsScreen() {
     };
 
     const handleDeleteGroup = () => {
-        dispatch(deleteGroup(group.id))
+        dispatch(deleteGroup(groupData.id))
         navigation.goBack()
         alert("Group deleted successfully")
     }
@@ -93,7 +97,7 @@ export default function GroupDetailsScreen() {
         {viewJoinGroupModal ? <JoinGroupModal
             modalVisible={viewJoinGroupModal}
             setModalVisible={setViewJoinGroupModal}
-            groupId={group.id}
+            groupId={groupData.id}
         /> : null}
         {viewConfirmDeleteModal ? <ConfirmActionModal modalVisible={viewConfirmDeleteModal}
                                                       setModalVisible={setViewConfirmDeleteModal}
@@ -105,15 +109,15 @@ export default function GroupDetailsScreen() {
         {viewEditGroupModal ? <NewGroupModal
             modalVisible={viewEditGroupModal}
             setModalVisible={setViewEditGroupModal}
-            group={group}
+            group={groupData}
             edit={true}
         /> : null}
         <BackButton/>
         <View style={styles.content} boxShadow={defaultStyles.dropShadow}>
             <View style={{justifyContent: "space-between", flexDirection: "row", alignItems: "start"}}>
                 <View>
-                    <Text style={defaultStyles.title}>{group.name}</Text>
-                    <Text style={defaultStyles.subtitle}>{group.id}</Text>
+                    <Text style={defaultStyles.title}>{groupData.name}</Text>
+                    <Text style={defaultStyles.subtitle}>{groupData.id}</Text>
                 </View>
                 {
                     isOwner ?
@@ -135,11 +139,11 @@ export default function GroupDetailsScreen() {
                 style={[defaultStyles.input, defaultStyles.text, {
                     borderRadius: 20, textAlignVertical: "top", paddingVertical: 12, paddingHorizontal: 16,
                 }]}
-            >{group.description}</Text>
+            >{groupData.description}</Text>
             {isOwner ? <Button text={"Make an Announcement"} onClick={() => {
-                navigation.navigate("MakeAnouncement", {groupId: group.id})
+                navigation.navigate("MakeAnouncement", {groupId: groupData.id})
             }}/> : <Button text={"Owner Details"} onClick={() => {
-                navigation.navigate("Profile", {userHashtag: group.ownerId})
+                navigation.navigate("Profile", {userHashtag: groupData.ownerId})
             }}
             />}
             {isOwner ? <Button style={{backgroundColor: colors.tertiary}}
@@ -166,7 +170,7 @@ export default function GroupDetailsScreen() {
                 }}>
                     <MaterialIcons name={"group"} size={24} style={{color: colors.secondary}}/>
                     <Text
-                        style={[defaultStyles.title, {color: colors.secondary}]}>{group?.groupMembers?.length ?? 0}</Text>
+                        style={[defaultStyles.title, {color: colors.secondary}]}>{groupData?.groupMembers?.length ?? 0}</Text>
                 </View>
                 <View
                     style={{
@@ -177,11 +181,11 @@ export default function GroupDetailsScreen() {
                         boxShadow: "inset 0px 1px 3px rgba(0, 0, 0, 0.5)",
                     }}>
                     <FlatList
-                        data={group.groupMembers}
+                        data={groupData.groupMembers}
                         keyExtractor={(item, index) => index.toString()}
                         renderItem={({item}) => (<View style={{flexDirection: 'row', alignItems: 'center'}}>
                             <GroupUserListCard memberRef={item} isOwner={isOwner}
-                                               groupId={group.id}/>
+                                               groupId={groupData.id}/>
                         </View>)}
                     />
                 </View>
