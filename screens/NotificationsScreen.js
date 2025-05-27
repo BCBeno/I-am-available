@@ -55,7 +55,7 @@ export default function NotificationsScreen({ user, setLoggedInUser }) {
                         if (groupDoc.exists()) {
                             const groupData = groupDoc.data();
                             // Use ownerId instead of ownerRoleHashtag if needed
-                            if (groupData.ownerRoleHashtag === user.hashtag) {
+                            if (groupData.ownerId === user.hashtag) {
                                 return {
                                     id: notificationDoc.id,
                                     ...notificationData,
@@ -115,7 +115,7 @@ export default function NotificationsScreen({ user, setLoggedInUser }) {
         try {
             const groupsQuery = query(
                 collection(db, "groups"),
-                where("ownerRoleHashtag", "==", `${userHashtag}`)
+                where("ownerId", "==", `${userHashtag}`)
             );
             const groupsSnap = await getDocs(groupsQuery);
 
