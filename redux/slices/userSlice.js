@@ -59,12 +59,7 @@ export const removeGroupFromUserInFirebase = createAsyncThunk(
     'user/removeGroupFromUser',
     async ({userHashtag, groupId}, thunkAPI) => {
         try {
-            console.log(userHashtag);
             const userRef = doc(db, 'users', userHashtag);
-            const groupToRemove = {
-                groupReference: `/groups/${groupId}`,
-            };
-
             const userSnap = await getDoc(userRef);
 
             if (!userSnap.exists()) {
@@ -73,10 +68,12 @@ export const removeGroupFromUserInFirebase = createAsyncThunk(
 
             const userData = userSnap.data();
 
-            const hasGroup = Array.isArray(userData.groups) &&
-                userData.groups.some(g => g.groupReference === groupToRemove.groupReference);
+            // Find the full group object to remove (without hashtag)
+            const groupToRemove = (userData.groups || []).find(
+                g => g.groupReference === `/groups/${groupId}`
+            );
 
-            if (!hasGroup) {
+            if (!groupToRemove) {
                 return thunkAPI.rejectWithValue('Grupo não encontrado nos dados do usuário');
             }
 

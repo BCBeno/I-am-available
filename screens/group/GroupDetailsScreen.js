@@ -14,6 +14,7 @@ import JoinGroupModal from "../../components/group/JoinGroupModal";
 import InviteGroupModal from "../../components/group/InviteGroupModal";
 import NewGroupModal from "../../components/group/NewGroupModal";
 import ConfirmActionModal from "../../components/ConfirmActionModal";
+import { removeGroupFromUserInFirebase } from "../../redux/slices/userSlice"; // Add this import
 
 export default function GroupDetailsScreen() {
 
@@ -63,7 +64,10 @@ export default function GroupDetailsScreen() {
         dispatch(removeUserFromGroup({
             groupId: groupData.id, userHashtag: user.hashtag
         }));
-        navigation.goBack()
+        dispatch(removeGroupFromUserInFirebase({
+            userHashtag: user.hashtag, groupId: groupData.id
+        }));
+        navigation.goBack();
     }
 
     const switchNotifications = () => {
