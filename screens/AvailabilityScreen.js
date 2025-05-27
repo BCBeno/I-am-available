@@ -112,38 +112,6 @@ export default function AvailabilityScreen({navigation, route, refreshTrigger}) 
     );
   };
 
-  return (
-    <>
-      <TopBar
-        style={{ paddingTop: "15%" }}
-        setText={() => {}}
-        setLoggedInUser={setLoggedInUser}
-        hideSearch={true}
-        user={user}
-      />
-
-      <View style={styles.container}>
-        <FlatList
-          data={availabilities}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 100 }}
-        />
-        <TouchableOpacity
-        style={styles.floatingButton}
-        onPress={() =>
-            navigation.navigate('CreateAvailability', { user })  
-        }
-        >
-        <Ionicons name="add" size={40} color="#fff" />
-        </TouchableOpacity>
-
-      </View>
-    </>
-  );
-}
-
-
 const styles = StyleSheet.create({
     daysText: {
         flexDirection: 'row',

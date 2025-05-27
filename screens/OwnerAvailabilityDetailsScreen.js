@@ -17,8 +17,6 @@ export default function OwnerAvailabilityDetailsScreen({route, navigation, setLo
 
   const { availability } = route.params;
 
-    const {availability} = route.params;
-
         {!availability.repeats && (
           <View style={[styles.iconRow, { marginBottom: 20 }]}>
             <Image source={CalendarIcon} style={styles.calendarIcon} />
