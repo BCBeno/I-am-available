@@ -117,7 +117,7 @@ export default function ProfileScreen() {
     };
 
     const navigateToGroupDetails = (group) => {
-        navigation.navigate('GroupDetails', {group});
+        navigation.navigate('GroupDetails', { groupId: group.id });
     };
 
     return (
