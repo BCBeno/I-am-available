@@ -8,71 +8,60 @@ import {useDispatch, useSelector} from "react-redux";
 import NotificationButton from "../../components/group/NotificationButton";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import GroupUserListCard from "../../components/group/GroupUserListCard";
-import {addUserToGroup, deleteGroup, removeUserFromGroup, updateGroupInFirestore} from "../../redux/slices/groupSlice";
+import {addUserToGroup, deleteGroup, removeUserFromGroup, updateGroupInFirestore, fetchGroups} from "../../redux/slices/groupSlice";
 import {useEffect, useState} from "react";
 import JoinGroupModal from "../../components/group/JoinGroupModal";
 import InviteGroupModal from "../../components/group/InviteGroupModal";
 import NewGroupModal from "../../components/group/NewGroupModal";
 import ConfirmActionModal from "../../components/ConfirmActionModal";
-import { removeGroupFromUserInFirebase } from "../../redux/slices/userSlice"; // Add this import
 
 export default function GroupDetailsScreen() {
-
-    const navigation = useNavigation()
-
+    const navigation = useNavigation();
     const route = useRoute();
-    const { group, groupId } = route.params;
-
+    const {groupId} = route.params;
     const dispatch = useDispatch();
 
-    const groupFromStore = useSelector(state => state.groups.items).find(g => g.id === (groupId || group?.id));
-    const groupData = group || groupFromStore;
-
+    const groups = useSelector(state => state.groups.items);
+    const group = groups.find(group => group.id === groupId);
     const user = useSelector(state => state.user.data);
 
-    const [isOwner, setIsOwner] = useState(groupData?.ownerId === user.hashtag);
+    // Always call hooks, even if group is undefined
+    const [isOwner, setIsOwner] = useState(group?.ownerId === user?.hashtag);
     const [isMember, setIsMember] = useState(false);
 
     useEffect(() => {
-        if (groupData) {
-            setIsMember(groupData.groupMembers.some(member => member.userReference === `/users/${user.hashtag}`));
+        if (group && user) {
+            setIsMember(group.groupMembers.some(member => member.userReference === `/users/${user.hashtag}`));
         }
-    }, [groupData]);
+    }, [group, user]);
 
     const [viewJoinGroupModal, setViewJoinGroupModal] = useState(false);
-
     const [receiveNotification, setReceiveNotification] = useState(
-        groupData?.groupMembers.find(member => member.userReference === `/users/${user.hashtag}`)?.notifications ?? false
+        group?.groupMembers?.find(member => member.userReference === `/users/${user?.hashtag}`)?.notifications ?? false
     );
-
     const [viewInviteModal, setViewInviteModal] = useState(false);
-
     const [viewEditGroupModal, setViewEditGroupModal] = useState(false);
-
     const [viewConfirmDeleteModal, setViewConfirmDeleteModal] = useState(false);
 
     const joinGroup = () => {
-        if (!groupData.autoAdmission) {
+        if (!group.autoAdmission) {
             setViewJoinGroupModal(true);
             return;
         }
-        dispatch(addUserToGroup({groupId: groupData.id, userHashtag: user.hashtag, notifications: false}));
+        dispatch(addUserToGroup({groupId: group.id, userHashtag: user.hashtag, notifications: false}));
         setIsMember(true)
     }
 
     const leftGroup = () => {
         dispatch(removeUserFromGroup({
-            groupId: groupData.id, userHashtag: user.hashtag
+            groupId: group.id, userHashtag: user.hashtag
         }));
-        dispatch(removeGroupFromUserInFirebase({
-            userHashtag: user.hashtag, groupId: groupData.id
-        }));
-        navigation.goBack();
+        navigation.goBack()
     }
 
     const switchNotifications = () => {
 
-        const updatedGroupMembers = groupData.groupMembers.map(member => {
+        const updatedGroupMembers = group.groupMembers.map(member => {
 
             if (member.userReference === `/users/${user.hashtag}`) {
                 return {
@@ -84,7 +73,7 @@ export default function GroupDetailsScreen() {
         });
 
         const updatedGroup = {
-            ...groupData, groupMembers: updatedGroupMembers
+            ...group, groupMembers: updatedGroupMembers
         };
         setReceiveNotification(!receiveNotification)
 
@@ -92,25 +81,22 @@ export default function GroupDetailsScreen() {
     };
 
     const handleDeleteGroup = () => {
-        dispatch(deleteGroup(groupData.id))
+        dispatch(deleteGroup(group.id))
         navigation.goBack()
         alert("Group deleted successfully")
     }
 
-    // Add this guard clause:
-    if (!groupData) {
-        return (
-            <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-                <Text style={{color: 'gray', fontSize: 16}}>Group not found.</Text>
-            </View>
-        );
-    }
+    useEffect(() => {
+        if (!group) {
+            dispatch(fetchGroups());
+        }
+    }, [group, dispatch]);
 
     return (<View style={defaultStyles.container}>
         {viewJoinGroupModal ? <JoinGroupModal
             modalVisible={viewJoinGroupModal}
             setModalVisible={setViewJoinGroupModal}
-            groupId={groupData.id}
+            groupId={group.id}
         /> : null}
         {viewConfirmDeleteModal ? <ConfirmActionModal modalVisible={viewConfirmDeleteModal}
                                                       setModalVisible={setViewConfirmDeleteModal}
@@ -118,20 +104,23 @@ export default function GroupDetailsScreen() {
                                                       text={"Are you sure you want to delete this group?"}
                                                       title={"Delete Group"}/> : null}
         {viewInviteModal ?
-            <InviteGroupModal setModalVisible={setViewInviteModal} modalVisible={viewInviteModal}
-                              group={groupData}/> : null}
+            <InviteGroupModal
+                setModalVisible={setViewInviteModal}
+                modalVisible={viewInviteModal}
+                group={group} // <-- Make sure this is present!
+            /> : null}
         {viewEditGroupModal ? <NewGroupModal
             modalVisible={viewEditGroupModal}
             setModalVisible={setViewEditGroupModal}
-            group={groupData}
+            group={group}
             edit={true}
         /> : null}
         <BackButton/>
         <View style={styles.content} boxShadow={defaultStyles.dropShadow}>
             <View style={{justifyContent: "space-between", flexDirection: "row", alignItems: "start"}}>
                 <View>
-                    <Text style={defaultStyles.title}>{groupData.name}</Text>
-                    <Text style={defaultStyles.subtitle}>{groupData.id}</Text>
+                    <Text style={defaultStyles.title}>{group?.name ?? ""}</Text>
+                    <Text style={defaultStyles.subtitle}>{group?.id ?? ""}</Text>
                 </View>
                 {
                     isOwner ?
@@ -153,11 +142,11 @@ export default function GroupDetailsScreen() {
                 style={[defaultStyles.input, defaultStyles.text, {
                     borderRadius: 20, textAlignVertical: "top", paddingVertical: 12, paddingHorizontal: 16,
                 }]}
-            >{groupData.description}</Text>
+            >{group?.description ?? ""}</Text>
             {isOwner ? <Button text={"Make an Announcement"} onClick={() => {
-                navigation.navigate("MakeAnouncement", {groupId: groupData.id})
+                navigation.navigate("MakeAnouncement", {groupId: group.id})
             }}/> : <Button text={"Owner Details"} onClick={() => {
-                navigation.navigate("Profile", {userHashtag: groupData.ownerId})
+                navigation.navigate("Profile", {userHashtag: group.ownerId})
             }}
             />}
             {isOwner ? <Button style={{backgroundColor: colors.tertiary}}
@@ -184,7 +173,7 @@ export default function GroupDetailsScreen() {
                 }}>
                     <MaterialIcons name={"group"} size={24} style={{color: colors.secondary}}/>
                     <Text
-                        style={[defaultStyles.title, {color: colors.secondary}]}>{groupData?.groupMembers?.length ?? 0}</Text>
+                        style={[defaultStyles.title, {color: colors.secondary}]}>{group?.groupMembers?.length ?? 0}</Text>
                 </View>
                 <View
                     style={{
@@ -195,11 +184,11 @@ export default function GroupDetailsScreen() {
                         boxShadow: "inset 0px 1px 3px rgba(0, 0, 0, 0.5)",
                     }}>
                     <FlatList
-                        data={groupData.groupMembers}
+                        data={group?.groupMembers ?? []}
                         keyExtractor={(item, index) => index.toString()}
                         renderItem={({item}) => (<View style={{flexDirection: 'row', alignItems: 'center'}}>
                             <GroupUserListCard memberRef={item} isOwner={isOwner}
-                                               groupId={groupData.id}/>
+                                               groupId={group?.id ?? ""}/>
                         </View>)}
                     />
                 </View>
