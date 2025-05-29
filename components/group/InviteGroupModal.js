@@ -31,7 +31,6 @@ export default function JoinGroupModal({modalVisible, setModalVisible, group}) {
             onClose()
             return;
         }
-
         const newInvites = [...(user.invites || []), {
             groupReference: `/groups/${group.id}`,
         }];
