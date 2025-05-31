@@ -27,6 +27,7 @@ import {getAuth, signOut} from 'firebase/auth';
 import {useSelector, useDispatch} from 'react-redux';
 import {fetchUser, updateUser} from "../redux/slices/userSlice";
 
+
 const UserProfileScreen = ({setLoggedInUser}) => {
     const dispatch = useDispatch();
     const user = useSelector(state => state.user.data);
@@ -52,7 +53,11 @@ const UserProfileScreen = ({setLoggedInUser}) => {
         try {
             const userRef = doc(db, 'users', updatedUser.hashtag);
             const { availabilities, ...cleanedUser } = updatedUser;//No longer adds the availabilities to the user collection
+          
+            await updateDoc(userRef, cleanedUser); // Persist the cleaned user data to Firestore
+   
             dispatch(updateUser({ userData: cleanedUser }));
+   
             
         } catch (error) {
             console.error('Failed to update profile:', error);
@@ -71,8 +76,10 @@ const UserProfileScreen = ({setLoggedInUser}) => {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 1
+            quality: 0.7
         });
+
+
         if (!result.canceled) {
             const uri = result.assets[0].uri;
             const base64 = await FileSystem.readAsStringAsync(uri, {encoding: FileSystem.EncodingType.Base64});
