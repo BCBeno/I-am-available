@@ -25,10 +25,9 @@ import {getDoc, doc, setDoc, updateDoc} from 'firebase/firestore';
 import {db} from '../firebaseconfig';
 import {getAuth, signOut} from 'firebase/auth';
 import {useSelector, useDispatch} from 'react-redux';
-import {deleteGroup} from "../redux/slices/groupSlice";
 import {fetchUser, updateUser} from "../redux/slices/userSlice";
 
-const UserProfileScreen = () => {
+const UserProfileScreen = ({setLoggedInUser}) => {
     const dispatch = useDispatch();
     const user = useSelector(state => state.user.data);
     const navigation = useNavigation();
@@ -192,22 +191,35 @@ const UserProfileScreen = () => {
             <View style={styles.topBarContainer}>
                 <BackButton/>
                 {!editMode && (
-                    <TouchableOpacity style={styles.logoutButton}
-                                      onPress={() => Alert.alert('Log Out', 'Are you sure?', [
-                                          {text: 'Cancel', style: 'cancel'},
-                                          {
-                                              text: 'Log Out', style: 'destructive', onPress: async () => {
-                                                  try {
-                                                      await signOut(getAuth());
-                                                      dispatch(updateUser(null));
-                                                  } catch (err) {
-                                                      Alert.alert('Error', 'Logout failed');
-                                                  }
-                                              }
-                                          }
-                                      ])}>
-                        <Text style={styles.logoutText}>Log Out</Text>
-                    </TouchableOpacity>
+            <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={() => {
+            Alert.alert(
+                'Log Out',
+                'Are you sure you want to log out?',
+                [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Log Out',
+                    style: 'destructive',
+                    onPress: async () => {
+                    try {
+                        await signOut(getAuth());
+                        setLoggedInUser(null);
+                    } catch (err) {
+                        console.error("❌ Logout failed:", err);
+                        Alert.alert('Error', 'Failed to log out.');
+                    }
+                    },
+                },
+                ]
+            );
+            }}
+        >
+            <Text style={styles.logoutText}>Log Out</Text>
+        </TouchableOpacity>
+
+
                 )}
             </View>
             <ScrollView contentContainerStyle={styles.container}>
