@@ -1,3 +1,4 @@
+//UserProfileScreen.js
 import React, {useState, useEffect} from 'react';
 import {
     View,
@@ -24,10 +25,9 @@ import {getDoc, doc, setDoc, updateDoc} from 'firebase/firestore';
 import {db} from '../firebaseconfig';
 import {getAuth, signOut} from 'firebase/auth';
 import {useSelector, useDispatch} from 'react-redux';
-import {deleteGroup} from "../redux/slices/groupSlice";
 import {fetchUser, updateUser} from "../redux/slices/userSlice";
 
-const UserProfileScreen = () => {
+const UserProfileScreen = ({setLoggedInUser}) => {
     const dispatch = useDispatch();
     const user = useSelector(state => state.user.data);
     const navigation = useNavigation();
@@ -51,7 +51,9 @@ const UserProfileScreen = () => {
     const saveProfileToFirestore = async (updatedUser) => {
         try {
             const userRef = doc(db, 'users', updatedUser.hashtag);
-            dispatch(updateUser({userData: updatedUser}));
+            const { availabilities, ...cleanedUser } = updatedUser;//No longer adds the availabilities to the user collection
+            dispatch(updateUser({ userData: cleanedUser }));
+            
         } catch (error) {
             console.error('Failed to update profile:', error);
             Alert.alert('Error', 'Failed to save your profile changes.');
@@ -133,7 +135,7 @@ const UserProfileScreen = () => {
         setNewHashtagsToCreate(prev => [...prev, hashtag]);
         setNewRoleData({name: '', hashtag: ''});
         setNewRoleModalVisible(false);
-    };
+      };
 
     const onBackPressHandler = () => {
         if (editMode) {
@@ -178,7 +180,9 @@ const UserProfileScreen = () => {
 
     if (!mockUser) {
         return (
-            <View style={defaultStyles.container}><Text>Loading your profile...</Text></View>
+            <View style={defaultStyles.container}>
+                <Text>Loading your profile...</Text>
+            </View>
         );
     }
 
@@ -187,22 +191,35 @@ const UserProfileScreen = () => {
             <View style={styles.topBarContainer}>
                 <BackButton/>
                 {!editMode && (
-                    <TouchableOpacity style={styles.logoutButton}
-                                      onPress={() => Alert.alert('Log Out', 'Are you sure?', [
-                                          {text: 'Cancel', style: 'cancel'},
-                                          {
-                                              text: 'Log Out', style: 'destructive', onPress: async () => {
-                                                  try {
-                                                      await signOut(getAuth());
-                                                      dispatch(updateUser(null));
-                                                  } catch (err) {
-                                                      Alert.alert('Error', 'Logout failed');
-                                                  }
-                                              }
-                                          }
-                                      ])}>
-                        <Text style={styles.logoutText}>Log Out</Text>
-                    </TouchableOpacity>
+            <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={() => {
+            Alert.alert(
+                'Log Out',
+                'Are you sure you want to log out?',
+                [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Log Out',
+                    style: 'destructive',
+                    onPress: async () => {
+                    try {
+                        await signOut(getAuth());
+                        setLoggedInUser(null);
+                    } catch (err) {
+                        console.error("❌ Logout failed:", err);
+                        Alert.alert('Error', 'Failed to log out.');
+                    }
+                    },
+                },
+                ]
+            );
+            }}
+        >
+            <Text style={styles.logoutText}>Log Out</Text>
+        </TouchableOpacity>
+
+
                 )}
             </View>
             <ScrollView contentContainerStyle={styles.container}>
@@ -328,7 +345,7 @@ const UserProfileScreen = () => {
                             setNewHashtagsToCreate([]);
                             setTimeout(() => setConfirmDisabled(false), 5000);
                         }}
-                    >
+                        >
                         <Text style={styles.confirmText}>Confirm</Text>
                     </TouchableOpacity>
                 </View>
