@@ -31,7 +31,6 @@ export default function JoinGroupModal({modalVisible, setModalVisible, group}) {
             onClose()
             return;
         }
-
         const newInvites = [...(user.invites || []), {
             groupReference: `/groups/${group.id}`,
         }];
@@ -66,7 +65,7 @@ export default function JoinGroupModal({modalVisible, setModalVisible, group}) {
                                 gap: 20,
                             }}>
                                 <Text
-                                    style={[defaultStyles.title, {textAlign: 'center'}]}>{`Enter the username`}</Text>
+                                    style={[defaultStyles.title, {textAlign: 'center'}]}>{`Enter the hashtag`}</Text>
                                 <TextInput
                                     style={[
                                         defaultStyles.input,

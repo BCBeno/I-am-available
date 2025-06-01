@@ -191,12 +191,7 @@ export default function ChatScreen({route}) {
                 renderItem={renderChatItem}
                 contentContainerStyle={styles.chatList}
             />
-            <Button title="Debug Profile" onPress={
-                () => {
-                    navigation.navigate("Profile", {userHashtag: "ben1"})
-                }
-            }
-            />
+           
         </View>
     );
 }

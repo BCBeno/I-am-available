@@ -43,7 +43,7 @@ export default function NewGroupForm({onClose, edit, group}) {
         const querySnapshot = await getDocs(q);
         const hashtagExists = !querySnapshot.empty;
 
-        if (hashtagExists) {
+        if (hashtagExists && !edit) {
             return alert('This Group hashtag already exists');
         }
 
