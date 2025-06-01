@@ -15,16 +15,17 @@ export default function GroupScreen() {
     const dispatch = useDispatch();
     const user = useSelector(state => state.user.data);
     const groups = useSelector(state => state.groups.items);
-    // When user.groups changes, fetch only those groups
+
+    const [newGroupModalVisible, setNewGroupModalVisible] = useState(false);
+    const [searchText, setSearchText] = useState('');
+    const [refreshing, setRefreshing] = useState(false); // <-- Add this
+
     useEffect(() => {
         if (user?.groups?.length > 0) {
             const refs = user.groups.map(g => g.groupReference);
             dispatch(fetchGroupsByList(refs));
         }
     }, [dispatch, user]);
-
-    const [newGroupModalVisible, setNewGroupModalVisible] = useState(false);
-    const [searchText, setSearchText] = useState('');
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -56,6 +57,25 @@ export default function GroupScreen() {
         }, [])
     );
 
+    const onRefresh = async () => {
+        setRefreshing(true);
+        if (searchText === '') {
+            if (user?.groups?.length > 0) {
+                const refs = user.groups.map(g => g.groupReference).sort((a, b) => a.localeCompare(b));
+                await dispatch(fetchGroupsByList(refs));
+            }
+        } else {
+            const q = query(
+                collection(db, 'groups'),
+                where('id', '>=', searchText),
+                where('id', '<=', searchText + '\uf8ff'),
+                where('public', '==', true)
+            );
+            await dispatch(fetchGroups(q));
+        }
+        setRefreshing(false);
+    };
+
     return (
         <>
             <TopBar style={{paddingTop: '15%'}} setText={setSearchText} text={searchText}/>
@@ -68,6 +88,8 @@ export default function GroupScreen() {
                     )}
                     contentContainerStyle={{gap: 10}}
                     showsVerticalScrollIndicator={false}
+                    refreshing={refreshing} // <-- Add this
+                    onRefresh={onRefresh}   // <-- And this
                 />
 
                 <NewGroupModal
