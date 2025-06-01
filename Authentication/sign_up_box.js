@@ -1,4 +1,4 @@
-//sign_up_box.js
+// sign_up_box.js
 import { db } from '../firebaseconfig'; 
 import React, {useState} from 'react';
 import {
@@ -7,23 +7,29 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
-    Alert,
     Keyboard,
+    Modal,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import ScreenWrapper from './ScreenWrapper';
-import {isHashtagTaken} from '../data/fakeDB';
 import {DEV_MODE} from '../config';
-import { signOut } from 'firebase/auth'; 
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+
 const SignUpBox = () => {
-  
     const navigation = useNavigation();
     const [name, setName] = useState('');
     const [userHashtag, setUserHashtag] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [email, setEmail] = useState('');
+    const [modalVisible, setModalVisible] = useState(false); 
+    const [modalMessage, setModalMessage] = useState(''); 
+
+    // Function to show custom alert message
+    const showMessage = (title, message) => {
+        setModalMessage(`${title}\n\n${message}`);
+        setModalVisible(true);
+    };
 
     const validatePassword = (pass) => {
         const minLength = 8;
@@ -40,64 +46,67 @@ const SignUpBox = () => {
         );
     };
 
-    const validateEmail = (email) => {
+    const validateEmail = (emailToCheck) => { 
       const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return regex.test(email.toLowerCase());
+      return regex.test(emailToCheck); // Validate the already lowercased email
     };
     
     const handleSignUp = async () => {
-        if (!name || !email || !userHashtag || !password || !confirmPassword) {
-          Alert.alert('Error', 'Please fill out all fields.');
+        // Convert email to lowercase for all internal logic and storage
+        const lowercasedEmail = email.toLowerCase();
+
+        if (!name || !lowercasedEmail || !userHashtag || !password || !confirmPassword) {
+          showMessage('Error', 'Please fill out all fields.');
           return;
         }
-        if (!validateEmail(email)) {
-          Alert.alert('Invalid Email', 'Please enter a valid email address.');
+        if (!validateEmail(lowercasedEmail)) { // Validate the lowercased email
+          showMessage('Invalid Email', 'Please enter a valid email address.');
           return;
         }
       
         if (password !== confirmPassword) {
-          Alert.alert('Error', 'Passwords do not match.');
+          showMessage('Error', 'Passwords do not match.');
           return;
         }
       
         if (!DEV_MODE && !validatePassword(password)) {
-          Alert.alert(
+          showMessage(
             'Weak Password',
             'Password must be at least 8 characters long and include an uppercase letter, lowercase letter, number, and special character.'
           );
           return;
         }
       
-        // 🔍 Check if hashtag is already taken
+        //  Check if hashtag is already taken
         try {
           const hashtagDoc = await getDoc(doc(db, 'hashtags', userHashtag));
           if (hashtagDoc.exists()) {
-            Alert.alert('Hashtag Taken', 'That hashtag is already taken. Please choose another.');
+            showMessage('Hashtag Taken', 'That hashtag is already taken. Please choose another.');
             return;
           }
         } catch (error) {
           console.error('❌ Error checking hashtag uniqueness:', error);
-          Alert.alert('Error', 'Something went wrong checking hashtag uniqueness.');
+          showMessage('Error', 'Something went wrong checking hashtag uniqueness.');
           return;
         }
       
-        // 🔍 Check if email is already in use
+        // Check if email is already in use (using the lowercased email for consistency)
         try {
-          const q = query(collection(db, 'users'), where('email', '==', email));
+          const q = query(collection(db, 'emails'), where('value', '==', lowercasedEmail)); // Use lowercased email here
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
-            Alert.alert('Email Taken', 'That email is already registered. Try logging in or using a different one.');
+            showMessage('Email Taken', 'That email is already registered. Try logging in or using a different one.');
             return;
           }
         } catch (error) {
           console.error('❌ Error checking email uniqueness:', error);
-          Alert.alert('Error', 'Something went wrong checking email uniqueness.');
+          showMessage('Error', 'Something went wrong checking email uniqueness.');
           return;
         }
       
         const newUser = {
           name,
-          email,
+          email: lowercasedEmail, // Pass the lowercased email to the next screen
           hashtag: userHashtag,
           password,
           photo: '',
@@ -111,8 +120,6 @@ const SignUpBox = () => {
         }, 100);
       };
       
-
-
     return (
         <ScreenWrapper>
             <View style={styles.container}>
@@ -124,15 +131,17 @@ const SignUpBox = () => {
                         value={name}
                         onChangeText={setName}
                     />
-                      <Text style={styles.label}>Email</Text>
-                      <TextInput
-                          style={styles.input}
-                          placeholder="Enter Email"
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          value={email}
-                          onChangeText={setEmail}
-                      />
+                    <Text style={styles.label}>Email</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Enter email"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        value={email} 
+                        onChangeText={setEmail} 
+                    />
+
+
                     <Text style={styles.label}>User Hashtag</Text>
                     <TextInput
                         style={styles.input}
@@ -177,9 +186,33 @@ const SignUpBox = () => {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                    setModalVisible(!modalVisible);
+                }}
+            >
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalText}>{modalMessage}</Text>
+                        <TouchableOpacity
+                            style={[styles.button, styles.buttonClose]}
+                            onPress={() => setModalVisible(!modalVisible)}
+                        >
+                            <Text style={styles.textStyle}>OK</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </ScreenWrapper>
     );
 };
+
+
 
 const styles = StyleSheet.create({
     container: {

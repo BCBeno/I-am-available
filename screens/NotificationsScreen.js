@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { View, ScrollView, StyleSheet, ActivityIndicator, Text, RefreshControl } from "react-native";
+import { View, ScrollView, StyleSheet, ActivityIndicator, Text, RefreshControl, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, deleteDoc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, deleteDoc, getDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "../firebaseconfig";
 import NotificationCard from "../components/NotificationCard";
 import TopBar from "../components/TopBar";
@@ -13,6 +13,7 @@ export default function NotificationsScreen({ user, setLoggedInUser }) {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [inviteGroups, setInviteGroups] = useState([]);
 
     const fetchUserAndNotifications = async () => {
         try {
@@ -55,7 +56,7 @@ export default function NotificationsScreen({ user, setLoggedInUser }) {
                         if (groupDoc.exists()) {
                             const groupData = groupDoc.data();
                             // Use ownerId instead of ownerRoleHashtag if needed
-                            if (groupData.ownerRoleHashtag === user.hashtag) {
+                            if (groupData.ownerId === user.hashtag) {
                                 return {
                                     id: notificationDoc.id,
                                     ...notificationData,
@@ -115,7 +116,7 @@ export default function NotificationsScreen({ user, setLoggedInUser }) {
         try {
             const groupsQuery = query(
                 collection(db, "groups"),
-                where("ownerRoleHashtag", "==", `${userHashtag}`)
+                where("ownerId", "==", `${userHashtag}`)
             );
             const groupsSnap = await getDocs(groupsQuery);
 
@@ -202,10 +203,73 @@ export default function NotificationsScreen({ user, setLoggedInUser }) {
         createGroupRequestNotifications(user.hashtag);
     }, [user]);
 
+    useEffect(() => {
+        const fetchInviteGroups = async () => {
+            if (userData?.invites?.length > 0) {
+                const groupRefs = userData.invites.map(invite => invite.groupReference.split("/").pop());
+                const groupDataArr = await Promise.all(
+                    groupRefs.map(async (groupId) => {
+                        const groupDoc = await getDoc(doc(db, "groups", groupId));
+                        return groupDoc.exists() ? { id: groupId, ...groupDoc.data() } : null;
+                    })
+                );
+                setInviteGroups(groupDataArr);
+            } else {
+                setInviteGroups([]);
+            }
+        };
+        fetchInviteGroups();
+    }, [userData]);
+
     const onRefresh = () => {
         setRefreshing(true);
         fetchUserAndNotifications();
         createGroupRequestNotifications(user.hashtag);
+    };
+
+    const handleAcceptInvite = async (invite) => {
+        try {
+            const groupId = invite.groupReference.split("/").pop();
+            const groupDocRef = doc(db, "groups", groupId);
+
+            // 1. Add user to group's groupMembers
+            await updateDoc(groupDocRef, {
+                groupMembers: arrayUnion({
+                    userReference: `/users/${user.hashtag}`,
+                    notifications: false
+                })
+            });
+
+            // 2. Add group to user's groups
+            const userDocRef = doc(db, "users", user.hashtag);
+            await updateDoc(userDocRef, {
+                groups: arrayUnion({
+                    groupReference: invite.groupReference,
+                    userRole: user.hashtag // or whatever role you want
+                }),
+                invites: arrayRemove(invite)
+            });
+
+            // 3. Refetch user data and notifications
+            fetchUserAndNotifications();
+        } catch (error) {
+            console.error("Error accepting invite:", error);
+        }
+    };
+
+    const handleDeclineInvite = async (invite) => {
+        try {
+            // Logic to decline the invite, e.g., removing it from the user's invites
+            const userDocRef = doc(db, "users", user.hashtag);
+            await updateDoc(userDocRef, {
+                invites: arrayRemove(invite),
+            });
+
+            // Refetch user data and notifications
+            fetchUserAndNotifications();
+        } catch (error) {
+            console.error("Error declining invite:", error);
+        }
     };
 
     if (loading && !refreshing) {
@@ -244,7 +308,7 @@ export default function NotificationsScreen({ user, setLoggedInUser }) {
                     <NotificationCard
                         key={notification.id}
                         title={notification.title}
-                        subject={notification.subject}
+                        subject={notification.announcement}
                         group={notification.group.startsWith("/groups/") ? `#${notification.group.split("/").pop()}` : notification.group}
                         dateTime={format(new Date(notification.dateTime), "dd-MM-yyyy HH:mm")}
                         onPressDetails={() =>
@@ -257,6 +321,66 @@ export default function NotificationsScreen({ user, setLoggedInUser }) {
                         }
                     />
                 ))}
+
+                {userData?.invites && userData.invites.length > 0 && (
+                    userData.invites.map((invite, idx) => {
+                        const groupId = invite.groupReference.split("/").pop();
+                        const groupInfo = inviteGroups.find(g => g && g.id === groupId);
+                        const groupName = groupInfo ? groupInfo.name : "Group";
+
+                        return (
+                            <View
+                                key={idx}
+                                style={{
+                                    backgroundColor: "#fff",
+                                    marginBottom: 16,
+                                    width: "93%",
+                                    padding: 18,
+                                    alignSelf: "center",
+                                    borderRadius: 14,
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.1,
+                                    shadowRadius: 4,
+                                    elevation: 2,
+                                }}
+                            >
+                                <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 4 }}>
+                                    Group Invite
+                                </Text>
+                                <Text style={{ fontSize: 15, marginBottom: 8 }}>
+                                    You've been invited to join:{" "}
+                                    <Text style={{ fontWeight: "bold", color: "#800080" }}>{groupName}</Text>
+                                </Text>
+                                <View style={{ flexDirection: "row", marginTop: 10 }}>
+                                    <TouchableOpacity
+                                        style={{
+                                            marginRight: 16,
+                                            backgroundColor: "#800080",
+                                            paddingVertical: 8,
+                                            paddingHorizontal: 18,
+                                            borderRadius: 6,
+                                        }}
+                                        onPress={() => handleAcceptInvite(invite)}
+                                    >
+                                        <Text style={{ color: "#fff", fontWeight: "bold" }}>Accept</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={{
+                                            backgroundColor: "#F44336",
+                                            paddingVertical: 8,
+                                            paddingHorizontal: 18,
+                                            borderRadius: 6,
+                                        }}
+                                        onPress={() => handleDeclineInvite(invite)}
+                                    >
+                                        <Text style={{ color: "#fff", fontWeight: "bold" }}>Decline</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        );
+                    })
+                )}
             </ScrollView>
         </View>
     );

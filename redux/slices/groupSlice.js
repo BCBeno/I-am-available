@@ -210,7 +210,16 @@ const groupSlice = createSlice({
             })
             .addCase(fetchGroupsByList.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.items = action.payload;
+                // Merge fetched groups into state.items
+                const fetchedGroups = action.payload;
+                fetchedGroups.forEach(fetchedGroup => {
+                    const idx = state.items.findIndex(g => g.id === fetchedGroup.id);
+                    if (idx !== -1) {
+                        state.items[idx] = fetchedGroup;
+                    } else {
+                        state.items.push(fetchedGroup);
+                    }
+                });
             })
             .addCase(fetchGroupsByList.rejected, (state, action) => {
                 state.status = 'failed';
