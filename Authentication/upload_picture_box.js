@@ -48,7 +48,7 @@ const ProfilePictureUploadBox = () => {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 1,
+            quality: 0.7,
             base64: true,
         });
 
@@ -103,8 +103,6 @@ const ProfilePictureUploadBox = () => {
             value: finalUser.email,
             createdAt: new Date().toISOString()
           });
-
-    navigation.navigate('SignIn');
     
   } catch (error) {
     console.log("❌ Firebase error:", error);
