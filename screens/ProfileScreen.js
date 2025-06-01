@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from "react";
-import {ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import {ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View} from "react-native";
 import {MaterialIcons} from "@expo/vector-icons";
-import {ScrollView} from "react-native-gesture-handler";
 import {collection, doc, getDoc, getDocs, query, where} from "firebase/firestore";
 import {db} from "../firebaseconfig";
 import defaultAvatar from "../assets/default-avatar.png";
@@ -117,30 +116,32 @@ export default function ProfileScreen() {
         });
     };
 
-    const navigateToGroupDetails = (groupId) => {
-        navigation.navigate('GroupDetails', {groupId});
+    const navigateToGroupDetails = (group) => {
+        navigation.navigate('GroupDetails', { groupId: group.id });
     };
 
     return (
-        <ScrollView style={styles.container}>
-            <View style={styles.profileHeader}>
-                <Image
-                    source={{uri: profile.photo || Image.resolveAssetSource(defaultAvatar).uri}}
-                    style={styles.avatar}
-                />
-                <Text style={styles.profileName}>{profile.name}</Text>
-                <Text style={styles.profileHashtag}>#{userHashtag}</Text>
-                <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
-                    <Text style={styles.messageButtonText}>Send message</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Availability Section */}
-            <View style={styles.separator}/>
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Availability</Text>
-                {profile.availabilities.map((a, i) => (
-                    <View key={i} style={styles.availabilityItem}>
+        <View style={styles.container}>
+            <FlatList
+                data={profile.availabilities}
+                keyExtractor={(_, i) => i.toString()}
+                ListHeaderComponent={
+                    <View style={styles.profileHeader}>
+                        <Image
+                            source={{uri: profile.photo || Image.resolveAssetSource(defaultAvatar).uri}}
+                            style={styles.avatar}
+                        />
+                        <Text style={styles.profileName}>{profile.name}</Text>
+                        <Text style={styles.profileHashtag}>#{userHashtag}</Text>
+                        <TouchableOpacity style={styles.messageButton} onPress={goToChat}>
+                            <Text style={styles.messageButtonText}>Send message</Text>
+                        </TouchableOpacity>
+                        <View style={styles.separator}/>
+                        <Text style={styles.sectionTitle}>Availability</Text>
+                    </View>
+                }
+                renderItem={({ item: a }) => (
+                    <View style={styles.availabilityItem}>
                         <View style={styles.rowCenter}>
                             <MaterialIcons name="access-time" size={20} color="#800080"/>
                             <Text style={styles.availabilityTime}>{a.time}</Text>
@@ -170,31 +171,37 @@ export default function ProfileScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                ))}
-            </View>
-
-            {/* Public Groups Section */}
-            <View style={styles.separator}/>
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Public Groups</Text>
-                {
-                    profile.groups.map((g) => (
-                        <View key={g.id} style={styles.groupItem}>
-                            <Text style={styles.groupName}>{g.name}</Text>
-                            <Text style={styles.groupId}>#{g.id}</Text>
-                            <View style={styles.rowBetween}>
-                                <View style={styles.rowCenter}>
-                                    <MaterialIcons name="group" size={20} color="gray"/>
-                                    <Text style={styles.groupMembers}>{g.groupMembers?.length || 0} members</Text>
+                )}
+                ListFooterComponent={
+                    <>
+                        <View style={styles.separator}/>
+                        <Text style={styles.sectionTitle}>Public Groups</Text>
+                        <FlatList
+                            data={profile.groups}
+                            keyExtractor={(g) => g.id}
+                            renderItem={({ item: g }) => (
+                                <View style={styles.groupItem}>
+                                    <Text style={styles.groupName}>{g.name}</Text>
+                                    <Text style={styles.groupId}>#{g.id}</Text>
+                                    <View style={styles.rowBetween}>
+                                        <View style={styles.rowCenter}>
+                                            <MaterialIcons name="group" size={20} color="gray"/>
+                                            <Text style={styles.groupMembers}>{g.groupMembers?.length || 0} members</Text>
+                                        </View>
+                                        <TouchableOpacity onPress={() => navigateToGroupDetails(g)}>
+                                            <Text style={styles.detailsLink}>Details →</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
-                                <TouchableOpacity onPress={() => navigateToGroupDetails(g.id)}>
-                                    <Text style={styles.detailsLink}>Details →</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    ))}
-            </View>
-        </ScrollView>
+                            )}
+                            ListEmptyComponent={
+                                <Text style={{textAlign: "center", color: "gray"}}>No groups found.</Text>
+                            }
+                        />
+                    </>
+                }
+            />
+        </View>
     );
 }
 
